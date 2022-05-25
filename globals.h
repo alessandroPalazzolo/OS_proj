@@ -12,3 +12,8 @@ typedef struct gegio {
   MASegment currentPosition;  
 } Train; 
 
+struct Config {
+    char MODE[10];
+    char MAP[10];
+    int isRBC;
+} env;

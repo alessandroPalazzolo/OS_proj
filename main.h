@@ -8,13 +8,7 @@
 
 #include "globals.h"
 
-struct configs {
-    char* MODE;
-    char* MAP;
-    int isRBC;
-} Config;
-
-int parseArgs(int, char**);
+void parseArgs(int, char**);
 int initMASegments();
 void parseMap(char*);
 int initTrains(pid_t*);
@@ -23,26 +17,26 @@ void usage();
 
 void parseArgs(int length, char** args) { 
     switch(length){
-        case 2:
-            Config.MODE = args[1];
-            Config.MAP = args[2];
-            Config.isRBC = 0;
-            break;
         case 3:
-            Config.MODE = args[1];
-            Config.MAP = args[3];
-            Config.isRBC = 1;
+            strcpy(env.MODE, args[1]);
+            strcpy(env.MAP, args[2]);
+            env.isRBC = 0;
+            break;
+        case 4:
+            strcpy(env.MODE, args[1]);
+            strcpy(env.MAP, args[3]);
+            env.isRBC = 1;
             break;
         default:
             // usage()
             break;
     }
 
-    if (strcmp(Config.MODE, "ETCS1") && strcmp(Config.MODE, "ETCS2")){
+    if (strcmp(env.MODE, "ETCS1") && strcmp(env.MODE, "ETCS2")){
         // usage()
     }
 
-    if (strcmp(Config.MAP, "MAP1") && strcmp(Config.MAP, "MAP2")){
+    if (strcmp(env.MAP, "MAP1") && strcmp(env.MAP, "MAP2")){
         // usage()
     }
 }
