@@ -9,7 +9,7 @@ int main(int argc, char* argv[]) {
     exit(EXIT_FAILURE);
   }
 
-  // initTrains();
+  initTrains();
   // spawnRegister();
 
   exit(EXIT_SUCCESS);

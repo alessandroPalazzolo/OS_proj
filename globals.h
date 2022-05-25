@@ -1,6 +1,6 @@
 #include <stdbool.h>
 
-#define TRAINS_COUNT 5
+#define TRAINS_COUNT 2
 #define SEGMENTS_COUNT 16
 #define FILE_PATH_SIZE 12
 

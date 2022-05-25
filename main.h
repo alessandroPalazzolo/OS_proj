@@ -39,6 +39,10 @@ void parseArgs(int length, char** args) {
     if (strcmp(env.MAP, "MAP1") && strcmp(env.MAP, "MAP2")){
         // usage()
     }
+
+    if (env.isRBC && strcmp(args[2], "RBC")){
+        // usage()
+    }
 }
 
 bool initMASegments(){
@@ -67,13 +71,15 @@ bool initMASegments(){
 
 void initTrains() {
     pid_t pid;
+
     for (int i = 0 ; i < TRAINS_COUNT ; i++) {
         pid = fork();
+
         if (pid == 0) {
             char trainName[5];
             sprintf(trainName, "T%d", i + 1);
-            execlp("train", "train", trainName);
-            perror("initTrains: (prof finochio)");
+            execl("train.o", "train", trainName, NULL);
+            perror("initTrains: ");
         } else if (pid < 0){
             perror("initTrains: ");
             exit(EXIT_FAILURE);
@@ -82,7 +88,7 @@ void initTrains() {
 }
 
 void spawnRegister() {
-  if (fork()==0) {
+  if (fork() == 0) {
     execlp("Register", "Register");
     perror("spawnRegister: (duce)"); // should never be executed
   }

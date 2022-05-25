@@ -4,7 +4,7 @@
 #include <sys/types.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <error.h>
+#include <errno.h>
 #include <stdbool.h>
 
 #include "globals.h"
@@ -24,8 +24,6 @@ int main(int argc, char* argv[]){
     
 
   } 
-
-
 }
 
 
