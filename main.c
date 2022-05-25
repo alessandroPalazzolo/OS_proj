@@ -1,7 +1,6 @@
 #include "main.h"
 
 int main(int argc, char* argv[]) {
-  pid_t trainPids[TRAINS_COUNT]; 
   pid_t registerPid;
 
   parseArgs(argc, argv);
@@ -10,9 +9,7 @@ int main(int argc, char* argv[]) {
     exit(EXIT_FAILURE);
   }
 
-  if (!initTrains(trainPids)){
-    exit(EXIT_FAILURE);
-  }
+  initTrains();
 
   spawnRegister();
 

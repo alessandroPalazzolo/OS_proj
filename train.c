@@ -14,7 +14,7 @@ void getMap();
 int main(int argc, char* argv[]){
   
   Train train;
-  strcpy(train.name, argv[2]);
+  strcpy(train.name, argv[1]);
   
   bool arrived = false;
   

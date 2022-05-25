@@ -1,8 +1,8 @@
-#define GLOBAL_FLAG 
+#include <stdbool.h>
 
 #define TRAINS_COUNT 5
 #define SEGMENTS_COUNT 16
-#define MA_FILE_PATH 12
+#define FILE_PATH_SIZE 12
 
 typedef char MASegment[4];
 
@@ -15,5 +15,5 @@ typedef struct gegio {
 struct Config {
     char MODE[10];
     char MAP[10];
-    int isRBC;
+    bool isRBC;
 } env;

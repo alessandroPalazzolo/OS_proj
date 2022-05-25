@@ -9,9 +9,9 @@
 #include "globals.h"
 
 void parseArgs(int, char**);
-int initMASegments();
+bool initMASegments();
 void parseMap(char*);
-int initTrains(pid_t*);
+void initTrains();
 void spawnRegister();
 void usage();
 
@@ -20,12 +20,12 @@ void parseArgs(int length, char** args) {
         case 3:
             strcpy(env.MODE, args[1]);
             strcpy(env.MAP, args[2]);
-            env.isRBC = 0;
+            env.isRBC = true;
             break;
         case 4:
             strcpy(env.MODE, args[1]);
             strcpy(env.MAP, args[3]);
-            env.isRBC = 1;
+            env.isRBC = false;
             break;
         default:
             // usage()
@@ -41,38 +41,42 @@ void parseArgs(int length, char** args) {
     }
 }
 
-int initMASegments(){
-    char paths[SEGMENTS_COUNT][MA_FILE_PATH];
+bool initMASegments(){
+    char paths[SEGMENTS_COUNT][FILE_PATH_SIZE];
 
     for (int i = 0; i < SEGMENTS_COUNT; i++){
         sprintf(paths[i], "./assets/MA%d", i + 1);
         int fd = open(paths[i], O_CREAT | O_RDWR, 0666);
         if (fd < 0) {
             perror("initMASegments error: ");
-            return 0;
+            return false;
         }
 
         if (write(fd, "0", 1) != 1){
             perror("initMASegments error: ");
-            return 0;
+            return false;
         }
 
         close(fd); 
     }
 
-    return 1;
+    return true;
 }
 
-void spawnTrain(pid_t* trains) {
-  for (int i = 0 ; i < 5 ; i++) {
-    if(fork()==0) {
-        char trainName[5];
-        sprintf(trainName, "T%i", i);
-        execlp("train", "train", trainName);
-        perror("spawnTrain (prof finochio)");
-      
-    } 
-  }
+void initTrains() {
+    pid_t pid;
+    for (int i = 0 ; i < TRAINS_COUNT ; i++) {
+        pid = fork();
+        if (pid == 0) {
+            char trainName[5];
+            sprintf(trainName, "T%d", i + 1);
+            execlp("train", "train", trainName);
+            perror("initTrains (prof finochio)");
+        } else if (pid < 0){
+            perror("initTrains error: ");
+            exit(EXIT_FAILURE);
+        }
+    }
 }
 
 void spawnRegister() {
