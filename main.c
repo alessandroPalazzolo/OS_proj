@@ -4,7 +4,7 @@ int main(int argc, char* argv[]) {
   pid_t trainPids[TRAINS_COUNT]; 
   pid_t registerPid;
 
-  parseArgs(argv);
+  parseArgs(argc, argv);
 
   if(!initMASegments()){
     exit(EXIT_FAILURE);
@@ -14,7 +14,6 @@ int main(int argc, char* argv[]) {
     exit(EXIT_FAILURE);
   }
 
-  parseMap(argv[2]);
   spawnRegister();
 
   exit(EXIT_SUCCESS);

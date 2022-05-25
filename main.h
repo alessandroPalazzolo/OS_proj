@@ -8,49 +8,43 @@
 
 #include "globals.h"
 
-enum modes {ECTS1, ECTS2} MODE;
-enum maps {MAPPA1, MAPPA2} MAP;
+struct configs {
+    char* MODE;
+    char* MAP;
+    int isRBC;
+} Config;
 
-int parseArgs(char**);
+int parseArgs(int, char**);
 int initMASegments();
 void parseMap(char*);
 int initTrains(pid_t*);
 void spawnRegister();
 void usage();
 
-void parseArgs(char** args) { 
-    char* mode = NULL;
-    char* variant = NULL;
-    strcpy(mode, args[1]);
-    strcpy(variant, args[2]);
+void parseArgs(int length, char** args) { 
+    switch(length){
+        case 2:
+            Config.MODE = args[1];
+            Config.MAP = args[2];
+            Config.isRBC = 0;
+            break;
+        case 3:
+            Config.MODE = args[1];
+            Config.MAP = args[3];
+            Config.isRBC = 1;
+            break;
+        default:
+            // usage()
+            break;
+    }
 
-    if (!strcmp(mode, "ETCS1")){
-        MODE = ECTS1;
-    } else if (!strcmp(mode, "ETCS2")){
-        MODE = ECTS2;
-
-        if (!strcmp(variant, "RBC")){
-            parseMap(args[3]); // rename
-            if (fork() == 0) {
-                // exec RBC  
-            }    
-        }
-
-    } else {
+    if (strcmp(Config.MODE, "ETCS1") && strcmp(Config.MODE, "ETCS2")){
         // usage()
     }
 
-    parseMap(variant);
-}
-
-void parseMap(char* map) {
-  if (!strcmp(map, "MAPPA1")) {
-    MAP = MAPPA1;
-  } else if (!strcmp(map, "MAPPA2")){
-    MAP = MAPPA2;  
-  } else {
-    //usage();
-  }
+    if (strcmp(Config.MAP, "MAP1") && strcmp(Config.MAP, "MAP2")){
+        // usage()
+    }
 }
 
 int initMASegments(){
@@ -90,6 +84,6 @@ void spawnTrain(pid_t* trains) {
 void spawnRegister() {
   if (fork()==0) {
     execlp("Register", "Register");
-    perror("spawnRegister: (duce)"); // should never been executed
+    perror("spawnRegister: (duce)"); // should never be executed
   }
 }
