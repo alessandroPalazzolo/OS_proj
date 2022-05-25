@@ -1,58 +1,75 @@
-#define TRAINS_COUNT 2
-#define SEGMENTS_COUNT 16
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/types.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <error.h>
+
+#include "globals.h"
 
 enum modes {ECTS1, ECTS2} MODE;
 enum maps {MAPPA1, MAPPA2} MAP;
 
-int parseMode(char**);
-int initMASegments(int*);
+int parseArgs(char**);
+int initMASegments();
 void parseMap(char*);
-void spawnTrain(pid_t*);
+int initTrains(pid_t*);
 void spawnRegister();
 void usage();
 
-int parseMode(char** args) { 
+void parseArgs(char** args) { 
     char* mode = NULL;
     char* variant = NULL;
     strcpy(mode, args[1]);
+    strcpy(variant, args[2]);
 
     if (!strcmp(mode, "ETCS1")){
         MODE = ECTS1;
     } else if (!strcmp(mode, "ETCS2")){
+        MODE = ECTS2;
 
-        strcpy(variant, args[2]);
         if (!strcmp(variant, "RBC")){
-            int status = 0;
+            parseMap(args[3]); // rename
             if (fork() == 0) {
                 // exec RBC  
             }    
-        } else {
-            MODE = ECTS2;
         }
 
     } else {
         // usage()
-        return 0;
     }
 
-    return 1;
+    parseMap(variant);
 }
 
-int initMASegments(int* fds){
-    char paths[SEGMENTS_COUNT][12];
+void parseMap(char* map) {
+  if (!strcmp(map, "MAPPA1")) {
+    MAP = MAPPA1;
+  } else if (!strcmp(map, "MAPPA2")){
+    MAP = MAPPA2;  
+  } else {
+    //usage();
+  }
+}
+
+int initMASegments(){
+    char paths[SEGMENTS_COUNT][MA_FILE_PATH];
 
     for (int i = 0; i < SEGMENTS_COUNT; i++){
         sprintf(paths[i], "./assets/MA%d", i + 1);
-        fds[i] = open(paths[i], O_CREAT | O_RDWR, 0666);
-        if (fds[i] < 0) {
+        int fd = open(paths[i], O_CREAT | O_RDWR, 0666);
+        if (fd < 0) {
             perror("initMASegments error: ");
             return 0;
         }
 
-        if (write(fds[i], "0", 1) != 1){
+        if (write(fd, "0", 1) != 1){
             perror("initMASegments error: ");
             return 0;
-        } 
+        }
+
+        close(fd); 
     }
 
     return 1;
@@ -61,34 +78,18 @@ int initMASegments(int* fds){
 void spawnTrain(pid_t* trains) {
   for (int i = 0 ; i < 5 ; i++) {
     if(fork()==0) {
-      char trainName[5];
-      sprintf(trainName, "T%i", i);
-      switch(MODE) { //same code
-        case ECTS1 : 
-          execlp("TrainECTS1", "TrainECTS1", trainName);
-          perror(main); // should never been executed
-          break;
-        case ECTS2 :
-          execlp("TrainECTS2", "TrainECTS2", trainName);
-          perror(main);
-      }
+        char trainName[5];
+        sprintf(trainName, "T%i", i);
+        execlp("train", "train", trainName);
+        perror("spawnTrain (prof finochio)");
+      
     } 
-  }
-}
-
-void parseMap(char* map) {
-  if (strcmp(map, "MAPPA1")) {
-    MAP = MAPPA1;
-  } else if (strcmp(map, "MAPPA2")){
-    MAP = MAPPA2;  
-  } else {
-    //usage();
   }
 }
 
 void spawnRegister() {
   if (fork()==0) {
     execlp("Register", "Register");
-    perror(main); // should never been executed
+    perror("spawnRegister: (duce)"); // should never been executed
   }
 }

@@ -7,24 +7,18 @@
 #include <error.h>
 #include <stdbool.h>
 
-typedef char MASegment[4];
-
-typedef struct {
-  char name [3];
-  MASegment route[6];
-  MASegment currentPosition;  
-} train; 
+#include "globals.h"
 
 void getMap();
 
 int main(int argc, char* argv[]){
   
-  train Train;
-  strcpy(Train.name, argv[2]);
+  Train train;
+  strcpy(train.name, argv[2]);
   
   bool arrived = false;
   
-  getMap(Train.name, Train.route);
+  getMap(train.name, train.route);
 
   while(!arrived){
     
