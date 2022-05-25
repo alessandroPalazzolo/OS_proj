@@ -3,15 +3,14 @@
 int main(int argc, char* argv[]) {
   pid_t registerPid;
 
-  parseArgs(argc, argv);
+  // parseArgs(argc, argv);
 
   if(!initMASegments()){
     exit(EXIT_FAILURE);
   }
 
-  initTrains();
-
-  spawnRegister();
+  // initTrains();
+  // spawnRegister();
 
   exit(EXIT_SUCCESS);
 }

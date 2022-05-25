@@ -43,6 +43,8 @@ void parseArgs(int length, char** args) {
 
 bool initMASegments(){
     char paths[SEGMENTS_COUNT][FILE_PATH_SIZE];
+    umask(0);
+    mkdir("assets", 0766);
 
     for (int i = 0; i < SEGMENTS_COUNT; i++){
         sprintf(paths[i], "./assets/MA%d", i + 1);
@@ -71,9 +73,9 @@ void initTrains() {
             char trainName[5];
             sprintf(trainName, "T%d", i + 1);
             execlp("train", "train", trainName);
-            perror("initTrains (prof finochio)");
+            perror("initTrains: (prof finochio)");
         } else if (pid < 0){
-            perror("initTrains error: ");
+            perror("initTrains: ");
             exit(EXIT_FAILURE);
         }
     }
