@@ -11,13 +11,12 @@
 
 
 void readTrainName(int, char*);
-void retrieveTrainRoute(char*, MASegment*);
 void writeTrainRoute(int, MASegment*);
-void loadMapFromFile(int, Map);
+void loadMapFromFile(int, Map*);
 
 int main(int argc, char* argv[]) {
   
-  Map map;
+  Map* map;
   char* mapName = argv[1];
   char mapPath[15];
   sprintf(mapPath, "maps/%s", mapName);
@@ -62,18 +61,7 @@ void readTrainName(int fd, char* trainName) { // change to int (?)
   }
 }
 
-void retrieveTrainRoute(char* trainName, MASegment* route) {
-  char* train;
-  int index = 0;
-  do {
-    lseek(fd, sizeof(), SEEK_SET)
-  } while (!strcmp(trainName,  ));
-
-
-  }
-}
-
-void loadMapFromFile(int fd, Map map) {
+void loadMapFromFile(int fd, Map* map) {
   lseek(fd, 0, SEEK_SET);
   for (int i = 0; i < 5; i++) {
     int segmentIndex = 0;

@@ -6,13 +6,14 @@
 
 typedef char MASegment[5];
 typedef MASegment Route[10];
-typedef Route Map[5];
 
 typedef struct {
-  char name [3];
-  MASegment route[10];
-  MASegment currentPosition; 
-} Train; 
+  Route T1;
+  Route T2;
+  Route T3;
+  Route T4;
+  Route T5;
+} Map;
 
 struct Config {
     char MODE[10];
