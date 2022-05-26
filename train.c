@@ -9,32 +9,38 @@
 
 #include "globals.h"
 
-void getRoute(char*, Route*);
-int checkNextMASegment(Route*, int, int*);
-void moveToNextMASegment(int*);
-  int main(int argc, char* argv[]){
+#define NEXT_SEG_FREE 0
+#define NEXT_SEG_OCCUPIED 1
+#define NEXT_SEG_STATION 3
 
+
+void getRoute(char*, Route*);
+int checkNextMASegment(Route*, int);
+void writeToMASegment(MASegment*, char);
+
+int main(int argc, char* argv[]){
   char name [3];
   Route* route = NULL;
-  int* currentPosition = 0;
-  int* fd;
+  int currentPosition = 0;
   bool arrived = false;
   strcpy(name, argv[1]);
   getRoute(name, route);
   
     while(!arrived){
-      switch (checkNextMASegment(route, currentPosition, fd)) {
-        case 0:
-          moveToNextMaSegment(fd);
+      switch (checkNextMASegment(route, currentPosition)) {
+        case NEXT_SEG_FREE:
+          writeToMASegment(route[currentPosition], '0');
+          currentPosition++;
+          writeToMASegment(route[currentPosition], '1');
           break;
-        case 1:
+        case NEXT_SEG_OCCUPIED:
           break;
-        case 2:
-          moveToStation();
+        case NEXT_SEG_STATION:
+          writeToMASegment(route[currentPosition], '0');
           arrived = true;
           break;
         default:
-          // something
+          // some error
           break;
       }
       sleep(2);
@@ -42,35 +48,49 @@ void moveToNextMASegment(int*);
 }
 
 
-void getRoute(char* trainName, Route* route) {
+void getRoute(char* name, Route* route) {
   // retrieve route from socket
 }
 
-int checkNextMASegment(Route* route, int currentPosition, int* fd) {
-  char* MASegment = NULL;
-  char* MAStatus = NULL;
+int checkNextMASegment(Route* route, int currentPosition) { // passare il MAFileFd ed utilizzarlo per le funzioni successive (?)
+  MASegment segment;
+  char MAStatus;
   char MASegmentPath[10];
 
-  strcpy(MASegment, route[currentPosition]);
-  if (strcmp(&MASegment[1], "S"))
-    return 2;
+  strcpy(segment, &route[currentPosition]);
+  if (strcmp(&segment[0], "S"))
+    return NEXT_SEG_STATION;
 
-  sprintf(MASegmentPath, "asset/%s", MASegment);
-  fd = open(MASegmentPath, O_RDONLY);
-  if (fd < 0){
+  sprintf(MASegmentPath, "asset/%s", segment);
+  int MAFileFd = open(MASegmentPath, O_RDONLY);
+  if (MAFileFd < 0){
     perror("checkNextMASegment");
     exit(EXIT_FAILURE);
   }
-  if (read(fd, MAStatus, 1) != 1 ){
+  if (read(MAFileFd, &MAStatus, 1) != 1 ){
     perror("checkNextMASegment");
     exit(EXIT_FAILURE);
   }
-  if (!strcmp(MAStatus, "0")) {
-    return 0;
+  if (!strcmp(&MAStatus, "0")) {
+    return NEXT_SEG_FREE;
   }
-  if (!strcmp(MAStatus, "1")){
-    close(fd);
-    return 1;
+  if (!strcmp(&MAStatus, "1")){
+    close(MAFileFd);
+    return NEXT_SEG_OCCUPIED;
   }
   return -1;
 }
+
+void writeToMASegment(MASegment* segment, char status) {
+  char pathMASegment[12];
+  sprintf(pathMASegment, "asset/%s", segment);
+  int MAFileFd = open(pathMASegment, O_WRONLY);
+  if (MAFileFd < 0) {
+    perror("releaseMASegment");
+  }
+  if (write(MAFileFd, &status, 1)){
+    perror("releaseMASegment");
+  }
+  close(MAFileFd);
+}
+
