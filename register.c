@@ -25,7 +25,7 @@ int main(int argc, char* argv[]) {
   bind(serverFd, serverSockAddrPtr, serverLen);
   listen(serverFd, 5); // numero massimo di connessioni pendenti
   while(1){
-    clientFd = accept (serverFd, clientSockAddrPtr, &clientLen)
+    clientFd = accept (serverFd, clientSockAddrPtr, &clientLen);
     
   }
 }
