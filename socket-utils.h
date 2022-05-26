@@ -17,50 +17,49 @@ typedef struct {
     struct sockaddr_un clientUNIXaddr;
 } SocketDetails;
 
-SocketDetails initSocket(char*);
-void buildSocket(SocketDetails, int);
-void runSocket(SocketDetails);
+void initSocket(SocketDetails*, char*);
+void buildSocket(SocketDetails*, int);
+void runSocket(SocketDetails*);
 
-SocketDetails initSocket(char* path){
-    SocketDetails sock;
+void initSocket(SocketDetails* sock, char* path){
     signal(SIGCHLD, SIG_IGN);
 
-    sock.serverUNIXaddr.sun_family = AF_UNIX;
-    strcpy(sock.serverUNIXaddr.sun_path, path);
-    sock.serverLen = sizeof(sock.serverUNIXaddr);
-    sock.clientLen = sizeof(sock.clientUNIXaddr);
-    sock.serverFd = socket(AF_UNIX, SOCK_STREAM, DEFAULT_PROTOCOL);
-    if (sock.serverFd < 0) {
+    sock->serverUNIXaddr.sun_family = AF_UNIX;
+    strcpy(sock->serverUNIXaddr.sun_path, path);
+    sock->serverLen = sizeof(sock->serverUNIXaddr);
+    sock->clientLen = sizeof(sock->clientUNIXaddr);
+    sock->serverFd = socket(AF_UNIX, SOCK_STREAM, DEFAULT_PROTOCOL);
+    if (sock->serverFd < 0) {
         perror("initSocket: ");
         exit(EXIT_FAILURE);
     }
     return sock;
 }
 
-void buildSocket(SocketDetails sock, int bufferSize) {
-    unlink(sock.serverUNIXaddr.sun_path);
-    struct sockaddr* serverSockAddrPtr = (struct sockaddr*) &sock.serverUNIXaddr;
-    if (bind(sock.serverFd, serverSockAddrPtr, sock.serverLen) < 0) {
+void buildSocket(SocketDetails* sock, int bufferSize) {
+    unlink(sock->serverUNIXaddr.sun_path);
+    struct sockaddr* serverSockAddrPtr = (struct sockaddr*) &sock->serverUNIXaddr;
+    if (bind(sock->serverFd, serverSockAddrPtr, sock->serverLen) < 0) {
         perror("buildSocket");
         exit(EXIT_FAILURE);
     }
-    listen(sock.serverFd, bufferSize);
+    listen(sock->serverFd, bufferSize);
 }
 
-void runSocket(SocketDetails sock) {
+void runSocket(SocketDetails* sock) {
     int clientFd;
     pid_t pid;
-    struct sockaddr* clientSockAddrPtr = (struct sockaddr*) &sock.clientUNIXaddr;
+    struct sockaddr* clientSockAddrPtr = (struct sockaddr*) &sock->clientUNIXaddr;
 
     while(1){
-        clientFd = accept(sock.serverFd, clientSockAddrPtr, &sock.clientLen);
+        clientFd = accept(sock->serverFd, clientSockAddrPtr, &sock->clientLen);
         pid = fork();
         if (pid == 0){
             write(clientFd, "diomerda", 8);
             close(clientFd);
             exit(EXIT_SUCCESS);
         } else if (pid > 0) {
-            printf("nre connection\n");
+            printf("new connection\n");
             close(clientFd);
         } else {
             perror("runSocket");
