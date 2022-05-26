@@ -3,15 +3,17 @@
 int main(int argc, char* argv[]) {
   pid_t registerPid;
 
-  // parseArgs(argc, argv);
+  parseArgs(argc, argv);
+  if (env.isRBC) {
+    // exec RBC without fork
+  }
 
   if(!initMASegments()){
     exit(EXIT_FAILURE);
   }
 
   initTrains();
-  // spawnRegister();
+  spawnRegister();
 
   exit(EXIT_SUCCESS);
 }
-//diocane

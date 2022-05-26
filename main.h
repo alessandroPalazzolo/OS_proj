@@ -36,19 +36,13 @@ void parseArgs(int length, char** args) {
         // usage()
     }
 
-    if (strcmp(env.MAP, "MAP1") && strcmp(env.MAP, "MAP2")){
-        // usage()
-    }
-
-    if (env.isRBC && strcmp(args[2], "RBC")){
+    if (strcmp(env.MAP, "MAPPA1") && strcmp(env.MAP, "MAPPA2")){
         // usage()
     }
 }
 
 bool initMASegments(){
     char paths[SEGMENTS_COUNT][FILE_PATH_SIZE];
-    umask(0);
-    mkdir("assets", 0766);
 
     for (int i = 0; i < SEGMENTS_COUNT; i++){
         sprintf(paths[i], "./assets/MA%d", i + 1);
@@ -71,24 +65,22 @@ bool initMASegments(){
 
 void initTrains() {
     pid_t pid;
-
     for (int i = 0 ; i < TRAINS_COUNT ; i++) {
         pid = fork();
-
         if (pid == 0) {
             char trainName[5];
             sprintf(trainName, "T%d", i + 1);
-            execl("train.o", "train", trainName, NULL);
-            perror("initTrains: ");
+            execlp("train", "train", trainName);
+            perror("initTrains (prof finochio)");
         } else if (pid < 0){
-            perror("initTrains: ");
+            perror("initTrains error: ");
             exit(EXIT_FAILURE);
         }
     }
 }
 
 void spawnRegister() {
-  if (fork() == 0) {
+  if (fork()==0) {
     execlp("Register", "Register");
     perror("spawnRegister: (duce)"); // should never be executed
   }

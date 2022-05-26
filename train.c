@@ -4,29 +4,30 @@
 #include <sys/types.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <errno.h>
+#include <error.h>
 #include <stdbool.h>
 
 #include "globals.h"
 
-void getMap();
+void getTrainInfo(char*, Train);
 
-int main(int argc, char* argv[]){
+  int main(int argc, char* argv[]){
   
-  Train train;
-  strcpy(train.name, argv[1]);
-  
+  char trainName[3];
   bool arrived = false;
-  
-  getMap(train.name, train.route);
+  Train train;
+  strcpy(trainName, argv[1]);
+  getTrainInfo(trainName, train);
 
-  while(!arrived){
-    
+    while(!arrived){
+        
 
-  } 
+    } 
+
+
 }
 
 
-void getMap(char* name, MASegment* route) {
-        
+void getTrainInfo(char* trainName, Train train) {
+            
 }
