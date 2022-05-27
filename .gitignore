@@ -3,4 +3,4 @@ a.out
 assets/
 train.o
 register.o
-register.o
+register

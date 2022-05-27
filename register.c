@@ -4,23 +4,17 @@
 #include "globals.h"
 
 void runSocketHandler(int);
-int loadMapFromFile(char* chosenMap, char[4][10][4]);
+int loadMapFromFile(char* chosenMap, Map*);
 
 int main(int argc, char* argv[]) {
   SocketDetails sock;
   int mapFd, mapIsLoaded;
-  char map[4][10][4];
+  Map map;
 
-  mapIsLoaded = loadMapFromFile(argv[1], map);
+  mapIsLoaded = loadMapFromFile(argv[1], &map);
   if(!mapIsLoaded){
     perror("error loading map");
     exit(EXIT_FAILURE);
-  }
-
-  for (int i = 0; i < 4; i++){
-    for (int j = 0; j < 10; j++) {
-      printf("%s\n", map[i][j]);
-    }
   }
 
   // initSocket(&sock, "register_socket");
@@ -35,10 +29,10 @@ void runSocketHandler(int clientFd) {
   write(clientFd, "robe", 4);
 }
 
-int loadMapFromFile(char* chosenMap, char map[4][10][4]) {
+int loadMapFromFile(char* chosenMap, Map* map) {
   int mapFd, readResult;
   char path[20], buffer[20], currentChar;
-  sprintf(path, "./assets/maps/%s", "MAPPA1"); // replace with chosenMap
+  sprintf(path, "./assets/maps/%s", chosenMap);
 
   mapFd = open(path, O_RDONLY);
   if (mapFd < 0){
@@ -46,6 +40,7 @@ int loadMapFromFile(char* chosenMap, char map[4][10][4]) {
   }
 
   int i, j, z;
+  bool isEOF = false;
 
   for (z = 0; z < TRAINS_COUNT; z++){
     i = 0;
@@ -57,12 +52,16 @@ int loadMapFromFile(char* chosenMap, char map[4][10][4]) {
       if (readResult == -1){
         return 0; 
       }
+
+      if (!readResult){
+        isEOF = true;
+      }
       
       buffer[i] = currentChar;
 
       if (currentChar == 32 || currentChar == '\n') {
         buffer[i] = '\0';
-        strcpy(map[z][j], buffer);
+        strcpy((*map)[z][j], buffer);
         memset(buffer, '\0', 20);
         j++;
         i = 0;
@@ -70,6 +69,8 @@ int loadMapFromFile(char* chosenMap, char map[4][10][4]) {
         i++;
       }
     } while (currentChar != '\n');
+
+    if (isEOF) break;
   }
   
   return 1;
