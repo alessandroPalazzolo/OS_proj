@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <error.h>
 #include <stdbool.h>
+#include <time.h>
 
 #include "globals.h"
 
@@ -18,19 +19,33 @@ void getRoute(char*, Route*);
 int checkNextMASegmentECTS1(Route*, int);
 int checkNextMASegmentECTS2(Route*, int);
 void writeToMASegment(MASegment*, char);
-void startTrain(Route*, int (*checkNextMASegment)(Route*, int));
+void startTrain(char*, Route*, int (*checkNextMASegment)(Route*, int));
+void logTrainStatus(int, Route*, int);
 
 int main(int argc, char* argv[]){
   char name [3];
-  Route* route = NULL;
+  char mode [6];
+  Route routeTest = {"S0","MA1","MA3","S5"} /*= NULL*/ ;
+  Route route = routeTest;
   strcpy(name, argv[1]);
-  getRoute(name, route);
+  strcpy(mode, argv[2]);
+//  getRoute(name, route);
+  if (!strcmp(mode, "ECTS1")){
+    startTrain(name, route, checkNextMASegmentECTS1);
+  } else if (!strcmp(mode, "ECTS2")){
+    startTrain(name, route, checkNextMASegmentECTS2);
+  }
 }
 
-void startTrain(Route* route, int (*checkNextMASegment)(Route*, int)){
+void startTrain(char* name, Route* route, int (*checkNextMASegment)(Route*, int)){ 
   bool arrived = false;
   int currentPosition = 0;
+  char logFilePath[20];
+  sprintf(logFilePath, "log/%s.log", name);
+  int logFileFd = open(logFilePath, O_WRONLY|O_TRUNC|O_CREAT, 0666);
   while(!arrived){
+    logTrainStatus(logFileFd, route, currentPosition);
+    sleep(2);
     switch (checkNextMASegment(route, currentPosition)) {
       case NEXT_SEG_FREE:
         writeToMASegment(route[currentPosition], '0');
@@ -47,8 +62,8 @@ void startTrain(Route* route, int (*checkNextMASegment)(Route*, int)){
         // some error
         break;
     }
-    sleep(2);
   }
+  exit(EXIT_SUCCESS); //return 0
 }
 
 void getRoute(char* name, Route* route) {
@@ -77,10 +92,10 @@ int checkNextMASegmentECTS1(Route* route, int currentPosition) {
     perror("checkNextMASegment");
     exit(EXIT_FAILURE);
   }
-  if (!strcmp(&MAStatus, "0")) {
+  if (MAStatus == '0') {
     return NEXT_SEG_FREE;
   }
-  if (!strcmp(&MAStatus, "1")){
+  if (MAStatus == '1') {
     close(MAFileFd);
     return NEXT_SEG_OCCUPIED;
   }
@@ -88,23 +103,40 @@ int checkNextMASegmentECTS1(Route* route, int currentPosition) {
 }
 
 int checkNextMASegmentECTS2(Route* route, int currentPosition) {
+  int resECTS2 = 0; // ask RBC for permission
+                    //
   int resECTS1 = checkNextMASegmentECTS1(route, currentPosition);
-  
+  if (resECTS2 == resECTS1){
+    return resECTS2;
+  } else {
+    return NEXT_SEG_OCCUPIED;
   }
-
 }
 
-
+void logTrainStatus(int fd, Route* route, int currentPosition){
+  char logString[100]; 
+  char timeString[40];
+  MASegment* actualSegment = route[currentPosition];
+  MASegment* nextSegment = route[currentPosition+1];
+  time_t timeSec = time(NULL);
+  struct tm* timeInfo = localtime(&timeSec);
+  strftime(timeString, sizeof(timeString), "%d %B %Y %X", timeInfo);
+  sprintf(logString, "[actual:%s] [next:%s] %s\n", actualSegment, nextSegment, timeString);
+  if (write(fd, logString, strlen(logString) != strlen(logString))) {
+    perror("logTrainStatus");
+    //some error
+  }
+}
 
 void writeToMASegment(MASegment* segment, char status) {
   char pathMASegment[12];
-  sprintf(pathMASegment, "asset/%s", segment);
+  sprintf(pathMASegment, "assets/%s", *segment);
   int MAFileFd = open(pathMASegment, O_WRONLY);
   if (MAFileFd < 0) {
-    perror("releaseMASegment");
+    perror("writeToMASegment");
   }
   if (write(MAFileFd, &status, 1)){
-    perror("releaseMASegment");
+    perror("writeToMASegment");
   }
   close(MAFileFd);
 }

@@ -70,7 +70,7 @@ void initTrains() {
         if (pid == 0) {
             char trainName[5];
             sprintf(trainName, "T%d", i + 1);
-            execlp("train", "train", trainName);
+            execlp("train", "train", trainName, env.MODE);
             perror("initTrains (prof finochio)");
         } else if (pid < 0){
             perror("initTrains error: ");
