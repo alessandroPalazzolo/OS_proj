@@ -4,3 +4,4 @@ assets/
 train.o
 register.o
 register
+train

@@ -1,50 +1,130 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <signal.h>
 #include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/un.h> 
-#include <errno.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <error.h>
 #include <stdbool.h>
 
 #include "globals.h"
+#include "socket-utils.h";
 
-void getMap();
+#define NEXT_SEG_FREE 0
+#define NEXT_SEG_OCCUPIED 1
+#define NEXT_SEG_STATION 3
+struct TrainDetails {
+  char name[4];
+  Route route;
+} train;
+
+void runSocketHandler(int);
+void getRoute();
+int checkNextMASegmentECTS1(Route*, int);
+int checkNextMASegmentECTS2(Route*, int);
+void writeToMASegment(MASegment*, char);
+void startTrain(Route*, int (*checkNextMASegment)(Route*, int));
 
 int main(int argc, char* argv[]){
-  int clientFd, serverLen, result;
-  struct sockaddr_un serverUNIXAddress;
-  struct sockaddr* serverSockAddrPtr;
-  serverSockAddrPtr = (struct sockaddr*) &serverUNIXAddress;
-  serverLen = sizeof (serverUNIXAddress);
-  clientFd = socket (AF_UNIX, SOCK_STREAM, 0);
-  serverUNIXAddress.sun_family = AF_UNIX; /* Server domain */
-  strcpy (serverUNIXAddress.sun_path, "register_socket");/*Server name*/
-  do { 
-  result = connect (clientFd, serverSockAddrPtr, serverLen);
-  if (result == -1) sleep (1); /* Wait and then try again */
-  } while (result == -1);
-  char socketOutput[10];
-  read(clientFd, socketOutput, 8);
-  printf("%s\n", socketOutput);
-  close (clientFd); /* Close the socket */
-  exit (/* EXIT_SUCCESS */ 0); /* Done */
-  
-  // Train train;
-  // strcpy(train.name, argv[1]);
-
-  // bool arrived = false;
-  
-  // getMap(train.name, train.route);
-
-  // while(!arrived){
-    
-
-  // } 
+  strcpy(train.name, "T1"); // replace argv[1]
+  getRoute();
+  printf("%s\n", train.route[0]);
 }
 
+void startTrain(Route* route, int (*checkNextMASegment)(Route*, int)){
+  bool arrived = false;
+  int currentPosition = 0;
+  while(!arrived){
+    switch (checkNextMASegment(route, currentPosition)) {
+      case NEXT_SEG_FREE:
+        writeToMASegment(route[currentPosition], '0');
+        currentPosition++;
+        writeToMASegment(route[currentPosition], '1');
+        break;
+      case NEXT_SEG_OCCUPIED:
+        break;
+      case NEXT_SEG_STATION:
+        writeToMASegment(route[currentPosition], '0');
+        arrived = true;
+        break;
+      default:
+        // some error
+        break;
+    }
+    sleep(2);
+  }
+}
 
-void getMap(char* name, MASegment* route) {
-        
+void runSocketHandler(int clientFd){
+  char buffer[4], currentChar;
+  int hasRead, i = 0, j = 0;
+  write(clientFd, train.name, 4);
+
+  do {
+    hasRead = read(clientFd, &currentChar, 1);
+
+    buffer[i] = currentChar;
+
+    if (currentChar == '\0') {
+      strcpy(train.route[j], buffer);
+      j++;
+      i = 0;
+      memset(buffer, '\0', 4);
+    } else {
+      i++;
+    }
+  } while(hasRead);
+}
+
+void getRoute() {
+  SocketDetails sock;
+  sock.type = CLIENT;
+  initSocket(&sock, "register_socket");
+  runSocket(&sock, &runSocketHandler);
+}
+
+/*
+ // passare il MAFileFd ed utilizzarlo per le funzioni successive (?)
+ // eliminare current Position e iterare direttamente sul puntatore a route (?)
+ */
+int checkNextMASegmentECTS1(Route* route, int currentPosition) {
+  MASegment segment;
+  char MAStatus;
+  char MASegmentPath[10];
+
+  strcpy(segment, &route[currentPosition]);
+  if (strcmp(&segment[0], "S"))
+    return NEXT_SEG_STATION;
+
+  sprintf(MASegmentPath, "asset/%s", segment);
+  int MAFileFd = open(MASegmentPath, O_RDONLY);
+  if (MAFileFd < 0){
+    perror("checkNextMASegment");
+    exit(EXIT_FAILURE);
+  }
+  if (read(MAFileFd, &MAStatus, 1) != 1 ){
+    perror("checkNextMASegment");
+    exit(EXIT_FAILURE);
+  }
+  if (!strcmp(&MAStatus, "0")) {
+    return NEXT_SEG_FREE;
+  }
+  if (!strcmp(&MAStatus, "1")){
+    close(MAFileFd);
+    return NEXT_SEG_OCCUPIED;
+  }
+  return -1;
+}
+
+void writeToMASegment(MASegment* segment, char status) {
+  char pathMASegment[12];
+  sprintf(pathMASegment, "asset/%s", segment);
+  int MAFileFd = open(pathMASegment, O_WRONLY);
+  if (MAFileFd < 0) {
+    perror("releaseMASegment");
+  }
+  if (write(MAFileFd, &status, 1)){
+    perror("releaseMASegment");
+  }
+  close(MAFileFd);
 }

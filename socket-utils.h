@@ -8,9 +8,13 @@
 #include <errno.h>
 
 #define DEFAULT_PROTOCOL 0
+#define SERVER 0
+#define CLIENT 1
 
 typedef struct {
+    int type;
     int serverFd;
+    int clientFd;
     socklen_t serverLen;
     socklen_t clientLen;
     struct sockaddr_un serverUNIXaddr;
@@ -29,10 +33,18 @@ void initSocket(SocketDetails* sock, char* path){
     sock->serverLen = sizeof(sock->serverUNIXaddr);
     sock->clientLen = sizeof(sock->clientUNIXaddr);
 
-    sock->serverFd = socket(AF_UNIX, SOCK_STREAM, DEFAULT_PROTOCOL);
-    if (sock->serverFd < 0) {
-        perror("initSocket: ");
-        exit(EXIT_FAILURE);
+    if (sock->type == SERVER) {
+        sock->serverFd = socket(AF_UNIX, SOCK_STREAM, DEFAULT_PROTOCOL);
+        if (sock->serverFd < 0) {
+            perror("initSocket: ");
+            exit(EXIT_FAILURE);
+        }
+    } else {
+        sock->clientFd = socket(AF_UNIX, SOCK_STREAM, DEFAULT_PROTOCOL);
+        if (sock->clientFd < 0) {
+            perror("initSocket: ");
+            exit(EXIT_FAILURE);
+        }
     }
 
     return sock;
@@ -54,22 +66,41 @@ void buildSocket(SocketDetails* sock, int bufferSize) {
 }
 
 void runSocket(SocketDetails* sock, void (*func_pt)(int)) {
-    int clientFd;
-    pid_t pid;
-    struct sockaddr* clientSockAddrPtr = (struct sockaddr*) &sock->clientUNIXaddr;
+    switch(sock->type){
+        case SERVER:
+            int clientFd;
+            pid_t pid;
+            struct sockaddr* clientSockAddrPtr = (struct sockaddr*) &sock->clientUNIXaddr;
+            
+            while(1){
+                clientFd = accept(sock->serverFd, clientSockAddrPtr, &sock->clientLen);
+                pid = fork();
 
-    while(1){
-        clientFd = accept(sock->serverFd, clientSockAddrPtr, &sock->clientLen);
-        pid = fork();
+                if (pid == 0){
+                    (*func_pt)(clientFd);
+                    close(clientFd);
+                    exit(EXIT_SUCCESS);
+                } else if (pid > 0) {
+                    close(clientFd);
+                } else {
+                    perror("runSocket");
+                }
+            }
+            break;
+        case CLIENT:
+            int isConnected;
+            struct sockaddr* serverSockAddrPtr = (struct sockaddr*) &sock->serverUNIXaddr;
 
-        if (pid == 0){
-            (*func_pt)(clientFd);
-            close(clientFd);
-            exit(EXIT_SUCCESS);
-        } else if (pid > 0) {
-            close(clientFd);
-        } else {
+            do { 
+                isConnected = connect (sock->clientFd, serverSockAddrPtr, sock->serverLen);
+                if (isConnected == -1) 
+                    sleep (1);
+            } while (isConnected == -1);
+                (*func_pt)(sock->clientFd);
+                close (clientFd); 
+            break;
+        default:
             perror("runSocket");
-        }
+            exit(EXIT_FAILURE);
     }
 }
