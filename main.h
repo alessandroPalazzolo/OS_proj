@@ -89,7 +89,7 @@ void initTrains() {
 
 void spawnRegister() {
   if (fork() == 0) {
-    execlp("Register", "Register");
+    execlp("Register", "Register", env.MAP, NULL);
     perror("spawnRegister: (duce)"); // should never be executed
   }
 }

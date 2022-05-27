@@ -19,7 +19,7 @@ typedef struct {
 
 void initSocket(SocketDetails*, char*);
 void buildSocket(SocketDetails*, int);
-void runSocket(SocketDetails*);
+void runSocket(SocketDetails*, void(*func_pt)(int));
 
 void initSocket(SocketDetails* sock, char* path){
     signal(SIGCHLD, SIG_IGN);
@@ -28,25 +28,32 @@ void initSocket(SocketDetails* sock, char* path){
     strcpy(sock->serverUNIXaddr.sun_path, path);
     sock->serverLen = sizeof(sock->serverUNIXaddr);
     sock->clientLen = sizeof(sock->clientUNIXaddr);
+
     sock->serverFd = socket(AF_UNIX, SOCK_STREAM, DEFAULT_PROTOCOL);
     if (sock->serverFd < 0) {
         perror("initSocket: ");
         exit(EXIT_FAILURE);
     }
+
     return sock;
 }
 
 void buildSocket(SocketDetails* sock, int bufferSize) {
-    unlink(sock->serverUNIXaddr.sun_path);
     struct sockaddr* serverSockAddrPtr = (struct sockaddr*) &sock->serverUNIXaddr;
-    if (bind(sock->serverFd, serverSockAddrPtr, sock->serverLen) < 0) {
+    int isBound;
+
+    unlink(sock->serverUNIXaddr.sun_path);
+    isBound = bind(sock->serverFd, serverSockAddrPtr, sock->serverLen);
+
+    if (isBound < 0) {
         perror("buildSocket");
         exit(EXIT_FAILURE);
     }
+
     listen(sock->serverFd, bufferSize);
 }
 
-void runSocket(SocketDetails* sock) {
+void runSocket(SocketDetails* sock, void (*func_pt)(int)) {
     int clientFd;
     pid_t pid;
     struct sockaddr* clientSockAddrPtr = (struct sockaddr*) &sock->clientUNIXaddr;
@@ -54,12 +61,12 @@ void runSocket(SocketDetails* sock) {
     while(1){
         clientFd = accept(sock->serverFd, clientSockAddrPtr, &sock->clientLen);
         pid = fork();
+
         if (pid == 0){
-            write(clientFd, "diomerda", 8);
+            (*func_pt)(clientFd);
             close(clientFd);
             exit(EXIT_SUCCESS);
         } else if (pid > 0) {
-            printf("new connection\n");
             close(clientFd);
         } else {
             perror("runSocket");
