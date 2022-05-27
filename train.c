@@ -15,44 +15,50 @@
 
 
 void getRoute(char*, Route*);
-int checkNextMASegment(Route*, int);
+int checkNextMASegmentECTS1(Route*, int);
+int checkNextMASegmentECTS2(Route*, int);
 void writeToMASegment(MASegment*, char);
+void startTrain(Route*, int (*checkNextMASegment)(Route*, int));
 
 int main(int argc, char* argv[]){
   char name [3];
   Route* route = NULL;
-  int currentPosition = 0;
-  bool arrived = false;
   strcpy(name, argv[1]);
   getRoute(name, route);
-  
-    while(!arrived){
-      switch (checkNextMASegment(route, currentPosition)) {
-        case NEXT_SEG_FREE:
-          writeToMASegment(route[currentPosition], '0');
-          currentPosition++;
-          writeToMASegment(route[currentPosition], '1');
-          break;
-        case NEXT_SEG_OCCUPIED:
-          break;
-        case NEXT_SEG_STATION:
-          writeToMASegment(route[currentPosition], '0');
-          arrived = true;
-          break;
-        default:
-          // some error
-          break;
-      }
-      sleep(2);
-    }
 }
 
+void startTrain(Route* route, int (*checkNextMASegment)(Route*, int)){
+  bool arrived = false;
+  int currentPosition = 0;
+  while(!arrived){
+    switch (checkNextMASegment(route, currentPosition)) {
+      case NEXT_SEG_FREE:
+        writeToMASegment(route[currentPosition], '0');
+        currentPosition++;
+        writeToMASegment(route[currentPosition], '1');
+        break;
+      case NEXT_SEG_OCCUPIED:
+        break;
+      case NEXT_SEG_STATION:
+        writeToMASegment(route[currentPosition], '0');
+        arrived = true;
+        break;
+      default:
+        // some error
+        break;
+    }
+    sleep(2);
+  }
+}
 
 void getRoute(char* name, Route* route) {
   // retrieve route from socket
 }
-
-int checkNextMASegment(Route* route, int currentPosition) { // passare il MAFileFd ed utilizzarlo per le funzioni successive (?)
+/*
+ // passare il MAFileFd ed utilizzarlo per le funzioni successive (?)
+ // eliminare current Position e iterare direttamente sul puntatore a route (?)
+ */
+int checkNextMASegmentECTS1(Route* route, int currentPosition) {
   MASegment segment;
   char MAStatus;
   char MASegmentPath[10];
@@ -80,6 +86,15 @@ int checkNextMASegment(Route* route, int currentPosition) { // passare il MAFile
   }
   return -1;
 }
+
+int checkNextMASegmentECTS2(Route* route, int currentPosition) {
+  int resECTS1 = checkNextMASegmentECTS1(route, currentPosition);
+  
+  }
+
+}
+
+
 
 void writeToMASegment(MASegment* segment, char status) {
   char pathMASegment[12];

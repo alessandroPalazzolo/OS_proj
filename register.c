@@ -53,7 +53,7 @@ int main(int argc, char* argv[]) {
     retrieveTrainRoute(trainName, route); 
     writeTrainRoute(clientFd, route);
   }
-
+}
 
 void readTrainName(int fd, char* trainName) { // change to int (?)
   if (read(fd, trainName, 3) != 3) {
@@ -66,20 +66,20 @@ void loadMapFromFile(int fd, Map* map) {
   for (int i = 0; i < 5; i++) {
     int segmentIndex = 0;
     bool lastSegment = false;
-    char* c = &map[i][0];
+    char c = map[i][0][0];
     while (!lastSegment) {
-      char* tmp;
+      char tmp;
       if (read(fd, tmp, 1) < 0){ //EOF
         lastSegment = true;
         i = 5;
       }
-      if (!strcmp(tmp, " ")) {
+      if (tmp = ' ') {
         segmentIndex++;
         c = map[i][segmentIndex];
       } else if (!strcmp(tmp, "\n")){
         lastSegment = true;
       } else {
-      strcpy(c++, tmp);
+      c++ = tmp;
       }
     } 
   }
