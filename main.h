@@ -59,7 +59,7 @@ bool initMASegments(){
 
         close(fd); 
     }
-    
+
     return true;
 }
 
@@ -71,9 +71,9 @@ void initTrains() {
             char trainName[5];
             sprintf(trainName, "T%d", i + 1);
             execlp("train", "train", trainName, env.MODE);
-            perror("initTrains (prof finochio)");
+            perror("initTrains");
         } else if (pid < 0){
-            perror("initTrains error: ");
+            perror("initTrains");
             exit(EXIT_FAILURE);
         }
     }
@@ -82,6 +82,6 @@ void initTrains() {
 void spawnRegister() {
   if (fork()==0) {
     execlp("Register", "Register");
-    perror("spawnRegister: (duce)"); // should never be executed
+    perror("spawnRegister"); // should never be executed
   }
 }

@@ -10,8 +10,8 @@ typedef Route Map[TRAINS_COUNT];
 
 typedef struct {
   char name[4];
-  Route* route;
-  int (*checkNextMAFuncPtr)(Route*);
+  Route route;
+  int (*checkNextMAFuncPtr)(MASegment);
   int logFileFd;
 } Train;
 
