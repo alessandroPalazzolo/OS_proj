@@ -6,14 +6,14 @@
 
 typedef char MASegment[5];
 typedef MASegment Route[10];
+typedef Route Map[TRAINS_COUNT];
 
 typedef struct {
-  Route T1;
-  Route T2;
-  Route T3;
-  Route T4;
-  Route T5;
-} Map;
+  char name[4];
+  Route* route;
+  int (*checkNextMAFuncPtr)(Route*);
+  int logFileFd;
+} Train;
 
 struct Config {
     char MODE[10];

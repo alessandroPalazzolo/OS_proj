@@ -59,7 +59,7 @@ bool initMASegments(){
 
         close(fd); 
     }
-
+    
     return true;
 }
 
