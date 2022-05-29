@@ -42,11 +42,11 @@ void parseArgs(int length, char** args) {
 }
 
 bool initMASegments(){
-    char paths[SEGMENTS_COUNT][FILE_PATH_SIZE];
+    char MAFilePath[FILE_PATH_SIZE];
 
     for (int i = 0; i < SEGMENTS_COUNT; i++){
-        sprintf(paths[i], "./assets/MA%d", i + 1);
-        int fd = open(paths[i], O_CREAT | O_RDWR, 0666);
+        sprintf(MAFilePath, "./assets/MA%d", i + 1);
+        int fd = open(MAFilePath, O_CREAT | O_RDWR, 0666);
         if (fd < 0) {
             perror("initMASegments error: ");
             return false;

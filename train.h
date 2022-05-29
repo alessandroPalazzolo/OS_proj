@@ -8,6 +8,7 @@
 #include <stdbool.h>
 #include <time.h>
 
+#include "socket-utils.h"
 #include "globals.h"
 
 #define NEXT_SEG_FREE 0
@@ -15,7 +16,7 @@
 #define NEXT_SEG_STATION 2
 
 
-void getRoute(char*, Route*);
+void getRoute();
 int checkNextMASegmentECTS1(MASegment);
 int checkNextMASegmentECTS2(MASegment);
 void enterMASegment(MASegment, int*);
@@ -23,19 +24,14 @@ void exitMASegment(MASegment, int*);
 void fillTrain(Train*,char**);
 void runTrain(Train*);
 void logTrainStatus(int, MASegment, MASegment);
+void runSocketHandler(int clientFd, void*);
 
 void fillTrain(Train* train, char* argv[]) {
   char mode [6];
-  strcpy(train->name, "T1"/* argv[1]*/);
-  strcpy(mode, "ECTS1" /*argv[2]*/);
-  Route testRoute;
-  strcpy(testRoute[0], "S0");
-  strcpy(testRoute[1], "MA1");
-  strcpy(testRoute[2], "MA2");
-  strcpy(testRoute[3], "S4");
+  strcpy(train->name,  argv[1]);
+  strcpy(mode, argv[2]);
   //train->route = testRoute;
   //  getRoute(name, train->route);
-  memmove(&train->route, testRoute, sizeof(testRoute));
   if (!strcmp(mode, "ECTS1")){
     train->checkNextMAFuncPtr = (*checkNextMASegmentECTS1);
   } else if (!strcmp(mode, "ECTS2")){
@@ -86,10 +82,6 @@ void runTrain(Train* train) {
   exit(EXIT_SUCCESS); //return 0
 }
 
-void getRoute(char* name, Route* route) {
-  // retrieve route from socket
-}
-
 int checkNextMASegmentECTS1(MASegment nextMA) {
   char MAStatus;
   char MASegmentPath[20];
@@ -97,7 +89,7 @@ int checkNextMASegmentECTS1(MASegment nextMA) {
   if (nextMA[0] == 'S')
     return NEXT_SEG_STATION;
 
-  sprintf(MASegmentPath, "assets/%s", nextMA);
+  sprintf(MASegmentPath, "./assets/%s", nextMA);
 
   int MAFileFd = open(MASegmentPath, O_RDONLY);
   if (MAFileFd < 0){
@@ -146,10 +138,10 @@ void logTrainStatus(int fd, MASegment currentMA, MASegment nextMA) {
 }
 
 void enterMASegment(MASegment segment, int* MAFileFd) {
-  char pathMASegment[20];
-  sprintf(pathMASegment, "assets/%s", segment);
-  fprintf(stderr, "entering: %s\n", pathMASegment);
-  *MAFileFd = open(pathMASegment, O_WRONLY);
+  char MASegmentPath[20];
+  sprintf(MASegmentPath, "./assets/%s", segment);
+  fprintf(stderr, "entering: %s\n", MASegmentPath);
+  *MAFileFd = open(MASegmentPath, O_WRONLY);
   if (MAFileFd < 0) {
     perror("enterMASegment");
   }
@@ -167,3 +159,33 @@ void exitMASegment(MASegment segment, int* MAFileFd) {
     close(*MAFileFd);
   }
 }
+
+void runSocketHandler(int clientFd, void* dataPtr) {
+  Train train = *((Train*) dataPtr);
+  char buffer[4], currentChar;
+  int hasRead, i = 0, j = 0;
+  write(clientFd, train.name, 4);
+  
+  do {
+    hasRead = read(clientFd, &currentChar, 1);
+    buffer[i] = currentChar;
+
+    if (currentChar == '\0') {
+      strcpy(train.route[j], buffer);
+      j++;
+      i = 0;
+      memset(buffer, '\0', 4);
+    } else {
+      i++;
+    }
+  } while(hasRead);
+  
+}
+
+void getRoute(Train* trainPtr) {
+  SocketDetails sock;
+  sock.type = CLIENT;
+  initSocket(&sock, "register_socket");
+  runSocket(&sock, &runSocketHandler, trainPtr);
+}
+
