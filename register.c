@@ -2,10 +2,13 @@
 
 int main(int argc, char* argv[]) {
   SocketDetails sock;
-  sock.type = SERVER;
+  char mapName[10];
   int mapFd, mapIsLoaded;
 
-  mapIsLoaded = loadMapFromFile("MAPPA1", &map); // replace with argv[1]
+  strcpy(mapName, argv[1]);
+  sock.type = SERVER;
+
+  mapIsLoaded = loadMapFromFile(mapName); 
   if(!mapIsLoaded){
     perror("error loading map");
     exit(EXIT_FAILURE);

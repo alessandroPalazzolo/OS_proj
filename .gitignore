@@ -1,7 +1,8 @@
+prova.o
+prova.c
 .vscode/
-a.out
 assets/
-train.o
-register.o
 register
+register.o
 train
+train.o 

@@ -6,23 +6,34 @@
 Map map;
 
 void runSocketHandler(int);
-int loadMapFromFile(char* chosenMap, Map*);
+int loadMapFromFile(char* chosenMap);
 
 void runSocketHandler(int clientFd) {
-  char buffer[5];
-  read(clientFd, buffer, 4);
-  printf("train requesting: %s\n", buffer);
+  char trainName[5];
+  int readResult, writeResult, trainIndex;
 
-  for (int i = 0; i < 10; i++){
-    write(clientFd, map[0][i], strlen(map[0][i]) + 1); // replace 0 with train index
-    printf("wrote: %s\n", map[0][i]); 
-    if (map[0][i][0] == 'S' && i) {
-      break;
+  readResult = read(clientFd, trainName, 4);
+
+  if (readResult == -1){
+    perror("runSocketHandler");
+    exit(EXIT_FAILURE);
+  }
+
+  trainIndex = atoi(trainName + 1) - 1;
+
+  for (int i = 0; i < MAX_ROUTE_SEGMENTS; i++){
+    writeResult = write(clientFd, map[trainIndex][i], strlen(map[trainIndex][i]) + 1);
+
+    if (writeResult == -1) {
+      perror("runSocketHandler");
+      exit(EXIT_FAILURE);
     }
+
+    if (map[trainIndex][i][0] == 'S' && i) break;
   }
 }
 
-int loadMapFromFile(char* chosenMap, Map* map) {
+int loadMapFromFile(char* chosenMap) {
   int mapFd, readResult;
   char path[20], buffer[20], currentChar;
   sprintf(path, "./assets/maps/%s", chosenMap);
@@ -54,7 +65,7 @@ int loadMapFromFile(char* chosenMap, Map* map) {
 
       if (currentChar == 32 || currentChar == '\n') {
         buffer[i] = '\0';
-        strcpy((*map)[z][j], buffer);
+        strcpy(map[z][j], buffer);
         memset(buffer, '\0', 20);
         j++;
         i = 0;

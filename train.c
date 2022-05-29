@@ -8,13 +8,14 @@
 #include <stdbool.h>
 
 #include "globals.h"
-#include "socket-utils.h";
+#include "socket-utils.h"
 
 #define NEXT_SEG_FREE 0
 #define NEXT_SEG_OCCUPIED 1
 #define NEXT_SEG_STATION 3
 struct TrainDetails {
   char name[4];
+  char mode[10];
   Route route;
 } train;
 
@@ -26,9 +27,8 @@ void writeToMASegment(MASegment*, char);
 void startTrain(Route*, int (*checkNextMASegment)(Route*, int));
 
 int main(int argc, char* argv[]){
-  strcpy(train.name, "T1"); // replace argv[1]
+  strcpy(train.name, argv[1]);
   getRoute();
-  printf("%s\n", train.route[0]);
 }
 
 void startTrain(Route* route, int (*checkNextMASegment)(Route*, int)){
@@ -56,7 +56,7 @@ void startTrain(Route* route, int (*checkNextMASegment)(Route*, int)){
 }
 
 void runSocketHandler(int clientFd){
-  char buffer[4], currentChar;
+  char buffer[5], currentChar;
   int hasRead, i = 0, j = 0;
   write(clientFd, train.name, 4);
 

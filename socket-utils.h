@@ -36,18 +36,16 @@ void initSocket(SocketDetails* sock, char* path){
     if (sock->type == SERVER) {
         sock->serverFd = socket(AF_UNIX, SOCK_STREAM, DEFAULT_PROTOCOL);
         if (sock->serverFd < 0) {
-            perror("initSocket: ");
+            perror("initSocket");
             exit(EXIT_FAILURE);
         }
     } else {
         sock->clientFd = socket(AF_UNIX, SOCK_STREAM, DEFAULT_PROTOCOL);
         if (sock->clientFd < 0) {
-            perror("initSocket: ");
+            perror("initSocket");
             exit(EXIT_FAILURE);
         }
     }
-
-    return sock;
 }
 
 void buildSocket(SocketDetails* sock, int bufferSize) {
