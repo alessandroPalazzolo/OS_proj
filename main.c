@@ -62,7 +62,8 @@ bool initMASegments(){
 
     for (int i = 0; i < SEGMENTS_COUNT; i++){
         sprintf(MAFilePath, "./assets/MA%d", i + 1);
-                
+        sprintf(MASemName, "MA", i + 1);
+        sem_unlink(MASemName); // will fail for each non allocated semaphore;
         int fd = open(MAFilePath, O_CREAT | O_RDWR, 0666);
         if (fd < 0) {
             perror("initMASegments error: ");
