@@ -19,11 +19,12 @@ typedef struct {
     socklen_t clientLen;
     struct sockaddr_un serverUNIXaddr;
     struct sockaddr_un clientUNIXaddr;
+    void* payload;
 } SocketDetails;
 
 void initSocket(SocketDetails*, char*);
 void buildSocket(SocketDetails*, int);
-void runSocket(SocketDetails*, void(*func_pt)(int));
+void runSocket(SocketDetails*, void(*func_pt)(int, void*));
 
 void initSocket(SocketDetails* sock, char* path){
     signal(SIGCHLD, SIG_IGN);
@@ -63,7 +64,7 @@ void buildSocket(SocketDetails* sock, int bufferSize) {
     listen(sock->serverFd, bufferSize);
 }
 
-void runSocket(SocketDetails* sock, void (*func_pt)(int)) {
+void runSocket(SocketDetails* sock, void (*func_pt)(int, void*)) {
     switch(sock->type){
         case SERVER:
             int clientFd;
@@ -75,7 +76,7 @@ void runSocket(SocketDetails* sock, void (*func_pt)(int)) {
                 pid = fork();
 
                 if (pid == 0){
-                    (*func_pt)(clientFd);
+                    (*func_pt)(clientFd, sock->payload);
                     close(clientFd);
                     exit(EXIT_SUCCESS);
                 } else if (pid > 0) {
@@ -94,7 +95,7 @@ void runSocket(SocketDetails* sock, void (*func_pt)(int)) {
                 if (isConnected == -1) 
                     sleep (1);
             } while (isConnected == -1);
-                (*func_pt)(sock->clientFd);
+                (*func_pt)(sock->clientFd, sock->payload);
                 close (clientFd); 
             break;
         default:

@@ -14,3 +14,10 @@ struct Config {
     char MAP[10];
     bool isRBC;
 } env;
+
+typedef struct {
+  char name[4];
+  Route route;
+  int (*checkNextMAFuncPtr)(MASegment);
+  int logFileFd;
+} Train;
