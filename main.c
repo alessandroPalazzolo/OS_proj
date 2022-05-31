@@ -5,6 +5,8 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <error.h>
+#include <semaphore.h>
+#include <sys/stat.h>
 
 #include "globals.h"
 #include "main.h"
@@ -18,9 +20,9 @@ int main(int argc, char* argv[]) {
     exit(EXIT_FAILURE);
   }
 
-  // initTrains();
-  // spawnRegister();
-
+  initTrains();
+  spawnRegister();
+  
   exit(EXIT_SUCCESS);
 }
 
@@ -101,7 +103,7 @@ void initTrains() {
 
 void spawnRegister() {
   if (fork() == 0) {
-    execlp("Register", "Register", env.MAP, NULL);
-    perror("spawnRegister: (duce)"); // should never be executed
+    execl("register.o", "register", env.MAP, NULL);
+    perror("spawnRegister");
   }
 }
