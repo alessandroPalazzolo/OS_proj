@@ -1,7 +1,14 @@
 #include <fcntl.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/socket.h>
 
-#include "socket-utils.h"
 #include "globals.h"
+#include "socket-utils.h"
 #include "register.h"
 
 int main(int argc, char* argv[]) {

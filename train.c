@@ -24,9 +24,9 @@ void fillTrain(Train* train, char* argv[]) {
   char mode [6];
   strcpy(train->name,  argv[1]);
   strcpy(mode, argv[2]);
-  if (!strcmp(mode, "ECTS1")){
+  if (!strcmp(mode, "ETCS1")) {
     train->checkNextMAFuncPtr = (*checkNextMASegmentECTS1);
-  } else if (!strcmp(mode, "ECTS2")){
+  } else if (!strcmp(mode, "ETCS2")) {
     train->checkNextMAFuncPtr = (*checkNextMASegmentECTS2);
   }
 
@@ -65,6 +65,7 @@ void runTrain(Train* train) {
         arrived = true;
         break;
       default:
+        printf("failure");
         exit(EXIT_FAILURE);
         break;
     }

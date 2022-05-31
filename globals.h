@@ -2,7 +2,7 @@
 
 #define TRAINS_COUNT 5
 #define SEGMENTS_COUNT 16
-#define FILE_PATH_SIZE 12
+#define FILE_PATH_SIZE 20
 #define MAX_ROUTE_SEGMENTS 10
 
 typedef char MASegment[5];
