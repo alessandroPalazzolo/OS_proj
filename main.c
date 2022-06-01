@@ -9,7 +9,6 @@
 #include <error.h>
 #include <semaphore.h>
 
-
 #include "globals.h"
 #include "main.h"
 
@@ -68,7 +67,7 @@ bool initMASegments() {
         sprintf(MAFilePath, "./assets/MA%d", i + 1);
         sprintf(MASemName, "MA", i + 1);
         sem_unlink(MASemName); 
-        int fd = open(MAFilePath, O_CREAT | O_RDWR, 0666);
+        int fd = open(MAFilePath, O_CREAT|O_RDWR, 0666);
         if (fd < 0) {
             perror("initMASegments");
             return false;
@@ -94,7 +93,7 @@ void initTrains() {
         if (pid == 0) {
             char trainName[5];
             sprintf(trainName, "T%d", i + 1);
-            execl("train.o", "train,o", trainName, env.MODE, NULL);
+            execl("train.o", "train.o", trainName, env.MODE, NULL);
             perror("initTrains");
         } else if (pid < 0){
             perror("initTrains");
@@ -104,8 +103,8 @@ void initTrains() {
 }
 
 void spawnRegister() {
-  if (fork() == 0) {
-    execl("register.o", "register.o", env.MAP, NULL);
-    perror("spawnRegister");
+    if (fork() == 0) {
+        execl("register.o", "register.o", env.MAP, NULL);
+        perror("spawnRegister");
     }
 }
