@@ -4,8 +4,8 @@
 
 void getRoute(Train* train);
 void runSocketHandler(int, void*);
-int checkNextMASegmentECTS1(MASegment);
-int checkNextMASegmentECTS2(MASegment);
+int checkNextMASegmentETCS1(MASegment);
+int checkNextMASegmentETCS2(MASegment);
 void enterMASegment(MASegment, int*);
 void exitMASegment(MASegment, int*);
 void fillTrain(Train*,char**);

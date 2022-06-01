@@ -25,9 +25,9 @@ void fillTrain(Train* train, char* argv[]) {
   strcpy(train->name,  argv[1]);
   strcpy(mode, argv[2]);
   if (!strcmp(mode, "ETCS1")) {
-    train->checkNextMAFuncPtr = (*checkNextMASegmentECTS1);
+    train->checkNextMAFuncPtr = (*checkNextMASegmentETCS1);
   } else if (!strcmp(mode, "ETCS2")) {
-    train->checkNextMAFuncPtr = (*checkNextMASegmentECTS2);
+    train->checkNextMAFuncPtr = (*checkNextMASegmentETCS2);
   }
 
   char logFilePath[20];
@@ -81,7 +81,7 @@ void runTrain(Train* train) {
 }
 
 
-int checkNextMASegmentECTS1(MASegment nextMA) {
+int checkNextMASegmentETCS1(MASegment nextMA) {
   char MAStatus;
   char MASegmentPath[20];
 
@@ -104,7 +104,7 @@ int checkNextMASegmentECTS1(MASegment nextMA) {
   }
   if (read(MAFileFd, &MAStatus, 1) < 0 ) {
 
-    perror("checkNextMASegment");
+    perror("checkNextMASegmentETCS1");
     sem_post(MASem);
     sem_close(MASem);
     close(MAFileFd);
@@ -114,22 +114,16 @@ int checkNextMASegmentECTS1(MASegment nextMA) {
 
   sem_post(MASem);
   sem_close(MASem);
+  return atoi(&MAStatus);
 
-  if (MAStatus == '0')
-    return NEXT_SEG_FREE;
-
-  if (MAStatus == '1') 
-    return NEXT_SEG_OCCUPIED;
-  
-  return -1;
 }
 
-int checkNextMASegmentECTS2(MASegment nextMA) {
-  int resECTS2 = 0; // ask RBC for permission
+int checkNextMASegmentETCS2(MASegment nextMA) {
+  int resETCS2 = 0; // ask RBC for permission
                     
-  int resECTS1 = checkNextMASegmentECTS1(nextMA);
-  if (resECTS2 == resECTS1){
-    return resECTS2;
+  int resETCS1 = checkNextMASegmentETCS1(nextMA);
+  if (resETCS2 == resETCS1){
+    return resETCS2;
   } else {
     return NEXT_SEG_OCCUPIED;
   }
