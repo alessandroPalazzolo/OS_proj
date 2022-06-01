@@ -49,7 +49,7 @@ void fillTrainData(Train* train, char* argv[]) {
 }
 
 void runTrain(Train* train) { 
-  int MAFileFd;
+  int MAFd, MAFdNext;
   MASegment* currentMA = train->route; 
   MASegment* nextMA = currentMA + 1;  
   bool arrived = false;
@@ -59,19 +59,24 @@ void runTrain(Train* train) {
     
     switch (train->checkNextMAFuncPtr(*nextMA)) {
       case NEXT_SEG_FREE:
-        exitMASegment(*currentMA, &MAFileFd);
+        fprintf(stderr, "%s entering: %s\n", train->name, nextMA);// debug purpose
+        enterMASegment(*nextMA, &MAFdNext);
+        fprintf(stderr, "%s exiting: %s\n", train->name, currentMA); // debug purpose
+        exitMASegment(*currentMA, &MAFd);
         currentMA++;
         nextMA++;
-        enterMASegment(*currentMA, &MAFileFd);
+        MAFd = MAFdNext;
         break;
       case NEXT_SEG_OCCUPIED:
         break;
       case NEXT_SEG_STATION:
-        exitMASegment(*currentMA, &MAFileFd);
+        fprintf(stderr, "%s exiting: %s\n", train->name, currentMA); // debug purpose
+        exitMASegment(*currentMA, &MAFd);
+        fprintf(stderr, "%s arrived: %s\n", train->name, nextMA); // debug purpose
         arrived = true;
         break;
       default:
-        printf("failure");
+        printf("%s failure", train->name); //debug purpose
         exit(EXIT_FAILURE);
         break;
     }
@@ -98,12 +103,18 @@ int checkNextMASegmentETCS1(MASegment nextMA) {
   int MAFileFd = open(MASegmentPath, O_RDONLY);
 
   if (MAFileFd < 0){
-    perror(MASegmentPath);
+
+    perror("checkNextMASegmentETCS1");
+    sem_post(MASem);
+    sem_close(MASem);
     close(MAFileFd);
     return -1;
   }
   if (read(MAFileFd, &MAStatus, 1) < 0 ) {
+
     perror("checkNextMASegment");
+    sem_post(MASem);
+    sem_close(MASem);
     close(MAFileFd);
     return -1;
   }
@@ -142,7 +153,6 @@ void logTrainStatus(int fd, MASegment currentMA, MASegment nextMA) {
 void enterMASegment(MASegment segment, int* MAFileFd) {
   char MASegmentPath[20];
   sprintf(MASegmentPath, "./assets/%s", segment);
-  fprintf(stderr, "entering: %s\n", MASegmentPath);
   *MAFileFd = open(MASegmentPath, O_WRONLY);
   if (MAFileFd < 0) {
     perror("enterMASegment");
