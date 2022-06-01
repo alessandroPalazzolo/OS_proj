@@ -23,7 +23,7 @@ int main(int argc, char* argv[]) {
 
   mapIsLoaded = loadMapFromFile(mapName, &map); 
   if(!mapIsLoaded){
-    perror("error loading map");
+    perror("Register error loading map");
     exit(EXIT_FAILURE);
   }
 
@@ -38,6 +38,7 @@ void runSocketHandler(int clientFd, void* payload) {
   int readResult, writeResult, trainIndex;
 
   readResult = read(clientFd, trainName, 5);
+  printf("Register: connection from %s\n", trainName); //debug
 
   if (readResult == -1){
     perror("runSocketHandler");
@@ -46,15 +47,20 @@ void runSocketHandler(int clientFd, void* payload) {
 
   trainIndex = atoi(trainName + 1) - 1;
 
+  char routeSegment[5]; 
+  bool isLastSegment = false;
+
   for (int i = 0; i < MAX_ROUTE_SEGMENTS; i++){
-    writeResult = write(clientFd, (*map)[trainIndex][i], strlen((*map)[trainIndex][i]) + 1);
+    strcpy(routeSegment, (*map)[trainIndex][i]);
+    writeResult = write(clientFd, routeSegment, strlen(routeSegment) + 1);
 
     if (writeResult == -1) {
       perror("runSocketHandler");
       exit(EXIT_FAILURE);
     }
 
-    if ((*map)[trainIndex][i][0] == 'S' && i) break;
+    isLastSegment = routeSegment[0] == 'S' && i;
+    if (isLastSegment) break;
   }
 }
 

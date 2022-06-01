@@ -9,15 +9,9 @@ typedef char MASegment[5];
 typedef MASegment Route[10];
 typedef Route Map[TRAINS_COUNT];
 
-struct Config {
-    char MODE[10];
-    char MAP[10];
-    bool isRBC;
-} env;
-
 typedef struct {
   char name[4];
   Route route;
-  int (*checkNextMAFuncPtr)(MASegment);
   int logFileFd;
+  int (*checkNextMAFuncPtr)(MASegment);
 } Train;

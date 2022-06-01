@@ -8,6 +8,8 @@
 #include <stdbool.h>
 #include <time.h>
 #include <semaphore.h>
+#include <sys/stat.h>
+
 
 #include "socket-utils.h"
 #include "globals.h"
@@ -15,28 +17,32 @@
 
 int main(int argc, char* argv[]){
   Train train;
-  fillTrain(&train, argv);
+  fillTrainData(&train, argv);
   getRoute(&train);
-  printf("%s\n", train.route[2]);
+  printf("%s: received route (route[2] = %s)\n", train.name, train.route[2]); // debug
   // runTrain(&train);
 }
 
-void fillTrain(Train* train, char* argv[]) {
-  char mode [6];
+void fillTrainData(Train* train, char* argv[]) {
+  char mode[10];
+
   strcpy(train->name,  argv[1]);
   strcpy(mode, argv[2]);
+
   if (!strcmp(mode, "ETCS1")) {
-    train->checkNextMAFuncPtr = (*checkNextMASegmentECTS1);
+    train->checkNextMAFuncPtr = &checkNextMASegmentETCS1;
   } else if (!strcmp(mode, "ETCS2")) {
-    train->checkNextMAFuncPtr = (*checkNextMASegmentECTS2);
+    train->checkNextMAFuncPtr = &checkNextMASegmentETCS2;
   }
 
   char logFilePath[20];
   sprintf(logFilePath, "log/%s.log", train->name);
+  umask(0);
   int fd = open(logFilePath, O_WRONLY|O_TRUNC|O_CREAT, 0666);
 
   if (fd < 0) {
     perror("runTrain");
+    exit(EXIT_FAILURE);
   }
 
   train->logFileFd = fd;
@@ -49,7 +55,6 @@ void runTrain(Train* train) {
   bool arrived = false;
 
   while(!arrived) {
-
     logTrainStatus(train->logFileFd, *currentMA, *nextMA);
     
     switch (train->checkNextMAFuncPtr(*nextMA)) {
@@ -70,13 +75,15 @@ void runTrain(Train* train) {
         exit(EXIT_FAILURE);
         break;
     }
+
     sleep(2);
   }
+
   close(train->logFileFd);
   exit(EXIT_SUCCESS); //return 0
 }
 
-int checkNextMASegmentECTS1(MASegment nextMA) {
+int checkNextMASegmentETCS1(MASegment nextMA) {
   char MAStatus;
   char MASegmentPath[20];
 
@@ -89,6 +96,7 @@ int checkNextMASegmentECTS1(MASegment nextMA) {
   sem_wait(MASem);
 
   int MAFileFd = open(MASegmentPath, O_RDONLY);
+
   if (MAFileFd < 0){
     perror(MASegmentPath);
     close(MAFileFd);
@@ -99,24 +107,18 @@ int checkNextMASegmentECTS1(MASegment nextMA) {
     close(MAFileFd);
     return -1;
   }
-    close(MAFileFd);
-
+  
+  close(MAFileFd);
   sem_post(MASem);
   sem_close(MASem);
 
-  if (MAStatus == '0')
-    return NEXT_SEG_FREE;
-
-  if (MAStatus == '1') 
-    return NEXT_SEG_OCCUPIED;
-  
-  return -1;
+  return atoi(&MAStatus);
 }
 
-int checkNextMASegmentECTS2(MASegment nextMA) {
+int checkNextMASegmentETCS2(MASegment nextMA) {
   int resECTS2 = 0; // ask RBC for permission
                     
-  int resECTS1 = checkNextMASegmentECTS1(nextMA);
+  int resECTS1 = checkNextMASegmentETCS1(nextMA);
   if (resECTS2 == resECTS1){
     return resECTS2;
   } else {

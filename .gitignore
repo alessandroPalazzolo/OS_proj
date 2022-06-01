@@ -10,3 +10,4 @@ main.o
 log/
 socket-utils.o
 log/
+main

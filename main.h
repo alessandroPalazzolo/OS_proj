@@ -1,7 +1,12 @@
+struct Config {
+    char MODE[10];
+    char MAP[10];
+    bool isRBC;
+} env;
+
 void parseArgs(int, char**);
 bool initMASegments();
-void parseMap(char*);
-void initTrains();
-void spawnRegister();
+void execTrains();
+void execRegister();
 void usage();
 
