@@ -1,3 +1,5 @@
+#include <sys/un.h>
+
 #define DEFAULT_PROTOCOL 0
 #define SERVER 0
 #define CLIENT 1

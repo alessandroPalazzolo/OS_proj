@@ -7,3 +7,6 @@ register.o
 train
 train.o
 main.o
+log/
+socket-utils.o
+log/

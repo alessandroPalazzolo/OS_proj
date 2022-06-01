@@ -17,7 +17,8 @@ int main(int argc, char* argv[]){
   Train train;
   fillTrain(&train, argv);
   getRoute(&train);
-  runTrain(&train);
+  printf("%s\n", train.route[2]);
+  // runTrain(&train);
 }
 
 void fillTrain(Train* train, char* argv[]) {

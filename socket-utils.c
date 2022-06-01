@@ -6,6 +6,7 @@
 #include <sys/socket.h>
 #include <sys/un.h> 
 #include <errno.h>
+#include <unistd.h>
 
 #include "socket-utils.h"
 
