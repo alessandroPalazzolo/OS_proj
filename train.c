@@ -8,6 +8,8 @@
 #include <stdbool.h>
 #include <time.h>
 #include <semaphore.h>
+#include <sys/stat.h>
+
 
 #include "socket-utils.h"
 #include "globals.h"
@@ -15,27 +17,32 @@
 
 int main(int argc, char* argv[]){
   Train train;
-  fillTrain(&train, argv);
+  fillTrainData(&train, argv);
   getRoute(&train);
-  runTrain(&train);
+  printf("%s: received route (route[2] = %s)\n", train.name, train.route[2]); // debug
+  // runTrain(&train);
 }
 
-void fillTrain(Train* train, char* argv[]) {
-  char mode [6];
+void fillTrainData(Train* train, char* argv[]) {
+  char mode[10];
+
   strcpy(train->name,  argv[1]);
   strcpy(mode, argv[2]);
+
   if (!strcmp(mode, "ETCS1")) {
-    train->checkNextMAFuncPtr = (*checkNextMASegmentETCS1);
+    train->checkNextMAFuncPtr = &checkNextMASegmentETCS1;
   } else if (!strcmp(mode, "ETCS2")) {
-    train->checkNextMAFuncPtr = (*checkNextMASegmentETCS2);
+    train->checkNextMAFuncPtr = &checkNextMASegmentETCS2;
   }
 
   char logFilePath[20];
   sprintf(logFilePath, "log/%s.log", train->name);
+  umask(0);
   int fd = open(logFilePath, O_WRONLY|O_TRUNC|O_CREAT, 0666);
 
   if (fd < 0) {
     perror("runTrain");
+    exit(EXIT_FAILURE);
   }
 
   train->logFileFd = fd;
@@ -48,15 +55,20 @@ void runTrain(Train* train) {
   bool arrived = false;
 
   while(!arrived) {
-
     logTrainStatus(train->logFileFd, *currentMA, *nextMA);
-    
+
+    sem_t* MASem = sem_open(nextMA, O_CREAT, 0666, 1);
+    sem_wait(MASem);
+
     switch (train->checkNextMAFuncPtr(*nextMA)) {
       case NEXT_SEG_FREE:
         fprintf(stderr, "%s entering: %s\n", train->name, nextMA);// debug purpose
         enterMASegment(*nextMA, &MAFdNext);
         fprintf(stderr, "%s exiting: %s\n", train->name, currentMA); // debug purpose
         exitMASegment(*currentMA, &MAFd);
+        
+        sem_post(MASem);
+
         currentMA++;
         nextMA++;
         MAFd = MAFdNext;
@@ -74,8 +86,10 @@ void runTrain(Train* train) {
         exit(EXIT_FAILURE);
         break;
     }
+
     sleep(2);
   }
+
   close(train->logFileFd);
   exit(EXIT_SUCCESS); //return 0
 }
@@ -90,32 +104,24 @@ int checkNextMASegmentETCS1(MASegment nextMA) {
 
   sprintf(MASegmentPath, "./assets/%s", nextMA);
   
-  sem_t* MASem = sem_open(nextMA, O_CREAT, 0666, 1);
-  sem_wait(MASem);
-
   int MAFileFd = open(MASegmentPath, O_RDONLY);
+
   if (MAFileFd < 0){
 
     perror("checkNextMASegmentETCS1");
-    sem_post(MASem);
-    sem_close(MASem);
     close(MAFileFd);
     return -1;
   }
   if (read(MAFileFd, &MAStatus, 1) < 0 ) {
 
     perror("checkNextMASegmentETCS1");
-    sem_post(MASem);
-    sem_close(MASem);
     close(MAFileFd);
     return -1;
   }
-    close(MAFileFd);
-
-  sem_post(MASem);
-  sem_close(MASem);
+  
+  close(MAFileFd);
+  
   return atoi(&MAStatus);
-
 }
 
 int checkNextMASegmentETCS2(MASegment nextMA) {

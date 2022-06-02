@@ -1,4 +1,3 @@
-#include <sys/socket.h>
 #include <sys/un.h>
 
 #define DEFAULT_PROTOCOL 0
@@ -19,4 +18,3 @@ typedef struct {
 void initSocket(SocketDetails*, char*);
 void buildSocket(SocketDetails*, int);
 void runSocket(SocketDetails*, void(*func_pt)(int, void*));
-
