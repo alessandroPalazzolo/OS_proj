@@ -20,7 +20,7 @@ int main(int argc, char* argv[]){
   fillTrainData(&train, argv);
   getRoute(&train);
   printf("%s: received route (route[2] = %s)\n", train.name, train.route[2]); // debug
-  // runTrain(&train);
+  runTrain(&train);
 }
 
 void fillTrainData(Train* train, char* argv[]) {
@@ -57,7 +57,7 @@ void runTrain(Train* train) {
   while(!arrived) {
     logTrainStatus(train->logFileFd, *currentMA, *nextMA);
 
-    sem_t* MASem = sem_open(nextMA, O_CREAT, 0666, 1);
+    sem_t* MASem = sem_open(*nextMA, O_CREAT, 0666, 1);
     sem_wait(MASem);
 
     switch (train->checkNextMAFuncPtr(*nextMA)) {
@@ -74,8 +74,10 @@ void runTrain(Train* train) {
         MAFd = MAFdNext;
         break;
       case NEXT_SEG_OCCUPIED:
+        sem_post(MASem);
         break;
       case NEXT_SEG_STATION:
+        sem_post(MASem);
         fprintf(stderr, "%s exiting: %s\n", train->name, currentMA); // debug purpose
         exitMASegment(*currentMA, &MAFd);
         fprintf(stderr, "%s arrived: %s\n", train->name, nextMA); // debug purpose
@@ -83,10 +85,14 @@ void runTrain(Train* train) {
         break;
       default:
         printf("%s failure", train->name); //debug purpose
+        sem_post(MASem);
+        sem_close(MASem);
         exit(EXIT_FAILURE);
         break;
     }
+    sem_close(MASem);
     sleep(2);
+
   }
 
   close(train->logFileFd);
@@ -161,6 +167,7 @@ void enterMASegment(MASegment segment, int* MAFileFd) {
 
 void exitMASegment(MASegment segment, int* MAFileFd) {
   if (segment[0] != 'S') {  
+    lseek(*MAFileFd, 0, SEEK_SET);
     if (write(*MAFileFd, "0", 1) != 1){
       perror("exitMASegment");
     }
