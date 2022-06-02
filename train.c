@@ -86,7 +86,6 @@ void runTrain(Train* train) {
         exit(EXIT_FAILURE);
         break;
     }
-
     sleep(2);
   }
 
