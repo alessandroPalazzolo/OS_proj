@@ -19,8 +19,8 @@ int main(int argc, char* argv[]){
   Train train;
   fillTrainData(&train, argv);
   getRoute(&train);
-  printf("%s: received route (route[2] = %s)\n", train.name, train.route[2]); // debug
-  // runTrain(&train);
+  // printf("%s: received route (route[2] = %s)\n", train.name, train.route[2]); // debug
+  runTrain(&train);
 }
 
 void fillTrainData(Train* train, char* argv[]) {
@@ -38,7 +38,7 @@ void fillTrainData(Train* train, char* argv[]) {
   char logFilePath[20];
   sprintf(logFilePath, "log/%s.log", train->name);
   umask(0);
-  int fd = open(logFilePath, O_WRONLY|O_TRUNC|O_CREAT, 0666);
+  int fd = open(logFilePath, O_WRONLY | O_TRUNC | O_CREAT, 0666);
 
   if (fd < 0) {
     perror("runTrain");
@@ -55,32 +55,41 @@ void runTrain(Train* train) {
   bool arrived = false;
 
   while(!arrived) {
+    sem_t* MASem = sem_open(*nextMA, O_CREAT, 0666, 1);
+    sem_wait(MASem);
+
     logTrainStatus(train->logFileFd, *currentMA, *nextMA);
     
     switch (train->checkNextMAFuncPtr(*nextMA)) {
       case NEXT_SEG_FREE:
-        fprintf(stderr, "%s entering: %s\n", train->name, nextMA);// debug purpose
+        fprintf(stderr, "%s entering: %s\n", train->name, nextMA);// debug 
         enterMASegment(*nextMA, &MAFdNext);
-        fprintf(stderr, "%s exiting: %s\n", train->name, currentMA); // debug purpose
+        fprintf(stderr, "%s exiting: %s\n", train->name, currentMA); // debug 
         exitMASegment(*currentMA, &MAFd);
+        sem_post(MASem);
         currentMA++;
         nextMA++;
         MAFd = MAFdNext;
         break;
       case NEXT_SEG_OCCUPIED:
+        sem_post(MASem);
         break;
       case NEXT_SEG_STATION:
-        fprintf(stderr, "%s exiting: %s\n", train->name, currentMA); // debug purpose
+        fprintf(stderr, "%s exiting: %s\n", train->name, currentMA); // debug 
         exitMASegment(*currentMA, &MAFd);
-        fprintf(stderr, "%s arrived: %s\n", train->name, nextMA); // debug purpose
+        sem_post(MASem);
+        fprintf(stderr, "%s arrived: %s\n", train->name, nextMA); // debug 
         arrived = true;
         break;
       default:
-        printf("%s failure", train->name); //debug purpose
+        sem_post(MASem);
+        sem_close(MASem);
+        printf("%s failure", train->name); //debug 
         exit(EXIT_FAILURE);
         break;
     }
-
+    
+    sem_close(MASem);
     sleep(2);
   }
 
@@ -96,32 +105,23 @@ int checkNextMASegmentETCS1(MASegment nextMA) {
     return NEXT_SEG_STATION;
 
   sprintf(MASegmentPath, "./assets/%s", nextMA);
-  
-  sem_t* MASem = sem_open(nextMA, O_CREAT, 0666, 1);
-  sem_wait(MASem);
 
   int MAFileFd = open(MASegmentPath, O_RDONLY);
 
   if (MAFileFd < 0){
 
     perror("checkNextMASegmentETCS1");
-    sem_post(MASem);
-    sem_close(MASem);
     close(MAFileFd);
     return -1;
   }
   if (read(MAFileFd, &MAStatus, 1) < 0 ) {
 
     perror("checkNextMASegment");
-    sem_post(MASem);
-    sem_close(MASem);
     close(MAFileFd);
     return -1;
   }
   
   close(MAFileFd);
-  sem_post(MASem);
-  sem_close(MASem);
 
   return atoi(&MAStatus);
 }
@@ -153,10 +153,12 @@ void logTrainStatus(int fd, MASegment currentMA, MASegment nextMA) {
 void enterMASegment(MASegment segment, int* MAFileFd) {
   char MASegmentPath[20];
   sprintf(MASegmentPath, "./assets/%s", segment);
-  *MAFileFd = open(MASegmentPath, O_WRONLY);
+  *MAFileFd = open(MASegmentPath, O_WRONLY | O_TRUNC);
+
   if (MAFileFd < 0) {
     perror("enterMASegment");
   }
+
   if (write(*MAFileFd, "1", 1) != 1){
     perror("enterMASegment");
   }
@@ -164,6 +166,8 @@ void enterMASegment(MASegment segment, int* MAFileFd) {
 
 void exitMASegment(MASegment segment, int* MAFileFd) {
   if (segment[0] != 'S') {  
+    lseek(*MAFileFd, 0, SEEK_SET);
+
     if (write(*MAFileFd, "0", 1) != 1){
       perror("exitMASegment");
     }

@@ -66,13 +66,12 @@ bool initMASegments() {
     char MAFilePath[FILE_PATH_SIZE];
     char MASemName[3];
     umask(0);
-    // no mkdir, assets gia presente per maps/MAPPA1 e maps/MAPPA2
 
     for (int i = 0; i < SEGMENTS_COUNT; i++) {
         sprintf(MAFilePath, "./assets/MA%d", i + 1);
         sprintf(MASemName, "MA", i + 1);
         sem_unlink(MASemName); 
-        int fd = open(MAFilePath, O_CREAT | O_WRONLY, 0666);
+        int fd = open(MAFilePath, O_CREAT | O_WRONLY | O_TRUNC, 0666);
         if (fd < 0) {
             perror("initMASegments");
             return false;

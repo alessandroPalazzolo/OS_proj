@@ -38,7 +38,7 @@ void runSocketHandler(int clientFd, void* payload) {
   int readResult, writeResult, trainIndex;
 
   readResult = read(clientFd, trainName, 5);
-  printf("Register: connection from %s\n", trainName); //debug
+  // printf("Register: connection from %s\n", trainName); //debug
 
   if (readResult == -1){
     perror("runSocketHandler");
