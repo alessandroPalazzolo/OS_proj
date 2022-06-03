@@ -41,7 +41,7 @@ void parseArgs(int length, char** args) {
             env.isRBC = true;
             break;
         default:
-            perror("parseArgs");
+            print(stderr, "Invalid arguments")
             exit(EXIT_FAILURE);// usage()
             break;
     }
