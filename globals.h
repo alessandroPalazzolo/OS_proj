@@ -2,6 +2,7 @@
 
 #define TRAINS_COUNT 5
 #define SEGMENTS_COUNT 16
+#define STATIONS_COUNT 8
 #define FILE_PATH_SIZE 20
 #define MAX_ROUTE_SEGMENTS 10
 

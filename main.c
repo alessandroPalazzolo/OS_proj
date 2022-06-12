@@ -7,7 +7,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <error.h>
-#include <semaphore.h>
+#include <semaphore.h>`
 #include <sys/stat.h>
 
 #include "globals.h"
@@ -17,6 +17,10 @@ int main(int argc, char* argv[]) {
     pid_t registerPid;
 
     parseArgs(argc, argv);
+
+    if (env.isRBC) {
+        //execl("RBC", "RBC");
+    }
 
     if(!initMASegments()){
         exit(EXIT_FAILURE);
@@ -41,7 +45,7 @@ void parseArgs(int length, char** args) {
             env.isRBC = true;
             break;
         default:
-            print(stderr, "Invalid arguments")
+            fprintf(stderr, "Invalid arguments");
             exit(EXIT_FAILURE);// usage()
             break;
     }
@@ -117,4 +121,8 @@ void execRegister() {
         perror("execRegister");
         exit(EXIT_FAILURE);
     }
+}
+
+void usage() {
+    printf("Usage: ./progetto ETCS_MODE MAPPA\n");
 }
