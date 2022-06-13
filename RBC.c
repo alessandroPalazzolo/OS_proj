@@ -49,29 +49,41 @@ int main(int argc, char* argv[]) {
 void runSocketHandlerServer(int clientFd, void* payload) {
     
     RBC* statusRBC = (RBC*) payload;
-    char action[7], segment[4];
+    char train[4] action[7], segment[4];
+    int result;
 
-    if (read(clientFd, action, 7) < 0) {
+    if (read(clientFd, train, 4) < 0)
         perror("runSocketHandlerServer");
-    }
 
-    if (read(clientFd, segment, 4) < 0) {
+    if (read(clientFd, action, 7) < 0) 
         perror("runSocketHandlerServer");
-    }
+    
+    if (read(clientFd, segment, 4) < 0) 
+        perror("runSocketHandlerServer");
 
     int MAIndex = atoi(segment+2);
 
-    if (strncmp(action, "enter", 5) && 
-            *statusRBC.segmentsOccupation[MAIndex] == 0){
+    if (strncmp(action, "enter", 5) {
         
-        *statusRBC.segmentsOccupation[MAIndex] = 1;
-        if(write(clientFd, "granted", 7) < 0) {
-            perror("runSocketHandlerServer");
+        if(*statusRBC.segmentsOccupation[MAIndex] == 0){
+            *statusRBC.segmentsOccupation[MAIndex] = 1;
+
+            if(write(clientFd, "granted", 7) < 0) 
+                perror("runSocketHandlerServer");
+
+            //logRbc(train, segment);
+
+        } else {
+            if(write(clientFd, "denied", 7) < 0)
+                perror("runSocketHandlerServer");
+
+            //logRbc(train, segment);
         }
     }
     
     if (strncmp(action, "exit", 4)) {
-
+        if(write(clientFd, "granted", 7) < 0)
+            perror("runSocketHandlerServer");
     }
 
 
