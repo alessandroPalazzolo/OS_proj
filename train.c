@@ -18,7 +18,6 @@
 int main(int argc, char* argv[]){
   Train train;
   fillTrainData(&train, argv);
-  getRoute(&train);
   // printf("%s: received route (route[2] = %s)\n", train.name, train.route[2]); // debug
   runTrain(&train);
 }
@@ -35,6 +34,8 @@ void fillTrainData(Train* train, char* argv[]) {
     train->checkNextMAFuncPtr = &checkNextMASegmentETCS2;
   }
 
+  getRoute(train); 
+
   char logFilePath[20];
   sprintf(logFilePath, "log/%s.log", train->name);
   umask(0);
@@ -49,36 +50,37 @@ void fillTrainData(Train* train, char* argv[]) {
 }
 
 void runTrain(Train* train) { 
-  int MAFd, MAFdNext;
-  MASegment* currentMA = train->route; 
-  MASegment* nextMA = currentMA + 1;  
-  bool arrived = false;
+  int MAfd, MAfdNext;
+  MASegment* currentMApt = train->route;
+  MASegment* nextMApt = train->route + 1;  
+  bool arrived = false; 
 
   while(!arrived) {
-    sem_t* MASem = sem_open(*nextMA, O_CREAT, 0666, 1);
+    sem_t* MASem = sem_open(*nextMApt, O_CREAT, 0666, 1);
+    train->nextMApt = nextMApt;
     sem_wait(MASem);
 
-    logTrainStatus(train->logFileFd, *currentMA, *nextMA);
-    
-    switch (train->checkNextMAFuncPtr(*nextMA)) {
+    logTrainStatus(train->logFileFd, *currentMApt, *nextMApt);
+
+    switch (train->checkNextMAFuncPtr(train)) {
       case NEXT_SEG_FREE:
-        fprintf(stderr, "%s entering: %s\n", train->name, nextMA);// debug 
-        enterMASegment(*nextMA, &MAFdNext);
-        fprintf(stderr, "%s exiting: %s\n", train->name, currentMA); // debug 
-        exitMASegment(*currentMA, &MAFd);
+        fprintf(stderr, "%s entering: %s\n", train->name, *nextMApt);// debug 
+        enterMASegment(*nextMApt, &MAfdNext);
+        fprintf(stderr, "%s exiting: %s\n", train->name, *currentMApt); // debug 
+        exitMASegment(*currentMApt, &MAfd);
         sem_post(MASem);
-        currentMA++;
-        nextMA++;
-        MAFd = MAFdNext;
+        currentMApt = nextMApt;
+        nextMApt++;
+        MAfd = MAfdNext;
         break;
       case NEXT_SEG_OCCUPIED:
         sem_post(MASem);
         break;
       case NEXT_SEG_STATION:
-        fprintf(stderr, "%s exiting: %s\n", train->name, currentMA); // debug 
-        exitMASegment(*currentMA, &MAFd);
+        fprintf(stderr, "%s exiting: %s\n", train->name, *currentMApt); // debug 
+        exitMASegment(*currentMApt, &MAfd);
         sem_post(MASem);
-        fprintf(stderr, "%s arrived: %s\n", train->name, nextMA); // debug 
+        fprintf(stderr, "%s arrived: %s\n", train->name, *nextMApt); // debug 
         arrived = true;
         break;
       default:
@@ -97,9 +99,12 @@ void runTrain(Train* train) {
   exit(EXIT_SUCCESS); //return 0
 }
 
-int checkNextMASegmentETCS1(MASegment nextMA) {
+int checkNextMASegmentETCS1(Train* train) {
   char MAStatus;
   char MASegmentPath[20];
+  MASegment nextMA;
+
+  strncpy(nextMA, *(train->nextMApt), sizeof(MASegment));
 
   if (nextMA[0] == 'S')
     return NEXT_SEG_STATION;
@@ -109,14 +114,13 @@ int checkNextMASegmentETCS1(MASegment nextMA) {
   int MAFileFd = open(MASegmentPath, O_RDONLY);
 
   if (MAFileFd < 0){
-
     perror("checkNextMASegmentETCS1");
     close(MAFileFd);
     return -1;
   }
-  if (read(MAFileFd, &MAStatus, 1) < 0 ) {
 
-    perror("checkNextMASegment");
+  if (read(MAFileFd, &MAStatus, 1) < 0 ) {
+    perror("checkNextMASegmentETCS1");
     close(MAFileFd);
     return -1;
   }
@@ -126,12 +130,43 @@ int checkNextMASegmentETCS1(MASegment nextMA) {
   return atoi(&MAStatus);
 }
 
-int checkNextMASegmentETCS2(MASegment nextMA) {
-  int resECTS2 = 0; // ask RBC for permission
-                    
-  int resECTS1 = checkNextMASegmentETCS1(nextMA);
-  if (resECTS2 == resECTS1){
-    return resECTS2;
+void runSocketHandlerRbc(int clientFd, void* payload){
+  Train* train = (Train*) payload;
+  MASegment nextSegment;
+  ssize_t writeTrain, writeAction, writeSegment;
+  char nextSegmentStatus[5];
+  char actionString[5];
+
+  strncpy(nextSegment, *(train->nextMApt), sizeof(*(train->nextMApt)));
+  sprintf(actionString, "%d", ACTION_ENTER_SEGMENT);
+
+  writeTrain = write(clientFd, train->name, sizeof(train->name));
+  writeAction = write(clientFd, actionString, 1);
+  writeSegment = write(clientFd, nextSegment, sizeof(nextSegment));
+
+  if (writeTrain <= 0 || writeAction <= 0 || writeSegment <= 0)
+    perror("runSocketHandlerRbc");
+
+  if (read(clientFd, nextSegmentStatus, 1) != 1){
+    perror("runSocketHandlerRbc");
+  }
+
+  train->RBCresponse = atoi(nextSegmentStatus);
+}
+
+int checkNextMASegmentETCS2(Train* train) {    
+  SocketDetails sock;
+  sock.type = CLIENT;
+  sock.payload = train;
+  int nextSegmentFileStatus;
+
+  initSocket(&sock, "RBC_socket");
+  runSocket(&sock, &runSocketHandlerRbc);
+
+  nextSegmentFileStatus = checkNextMASegmentETCS1(train);
+
+  if (nextSegmentFileStatus == train->RBCresponse) {
+    return train->RBCresponse;
   } else {
     return NEXT_SEG_OCCUPIED;
   }
@@ -155,7 +190,7 @@ void enterMASegment(MASegment segment, int* MAFileFd) {
   sprintf(MASegmentPath, "./assets/%s", segment);
   *MAFileFd = open(MASegmentPath, O_WRONLY | O_TRUNC);
 
-  if (MAFileFd < 0) {
+  if (*MAFileFd < 0) {
     perror("enterMASegment");
   }
 
@@ -176,7 +211,7 @@ void exitMASegment(MASegment segment, int* MAFileFd) {
   }
 }
 
-void runSocketHandler(int clientFd, void* payload) {
+void runSocketHandlerRegister(int clientFd, void* payload) {
   Train* train = (Train*) payload; 
   char buffer[5], currentChar;
   int hasRead, i = 0, j = 0;
@@ -195,7 +230,6 @@ void runSocketHandler(int clientFd, void* payload) {
       i++;
     }
   } while(hasRead);
-  
 }
 
 void getRoute(Train* train) {
@@ -204,5 +238,5 @@ void getRoute(Train* train) {
   sock.payload = train;
 
   initSocket(&sock, "register_socket");
-  runSocket(&sock, &runSocketHandler);
+  runSocket(&sock, &runSocketHandlerRegister);
 }

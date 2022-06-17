@@ -57,17 +57,20 @@ void runSocket(SocketDetails* sock, void (*func_pt)(int, void*)) {
             
             while(1){
                 clientFd = accept(sock->serverFd, clientSockAddrPtr, &sock->clientLen);
-                pid = fork();
+                
+                (*func_pt)(clientFd, sock->payload);
+                close(clientFd);
 
-                if (pid == 0){
-                    (*func_pt)(clientFd, sock->payload);
-                    close(clientFd);
-                    exit(EXIT_SUCCESS);
-                } else if (pid > 0) {
-                    close(clientFd);
-                } else {
-                    perror("runSocket");
-                }
+                // pid = fork();
+                // if (pid == 0){
+                //     (*func_pt)(clientFd, sock->payload);
+                //     close(clientFd);
+                //     exit(EXIT_SUCCESS);
+                // } else if (pid > 0) {
+                //     close(clientFd);
+                // } else {
+                //     perror("runSocket");
+                // }
             }
             break;
         case CLIENT:

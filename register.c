@@ -6,6 +6,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/socket.h>
+#include <stdbool.h>
 
 #include "globals.h"
 #include "socket-utils.h"

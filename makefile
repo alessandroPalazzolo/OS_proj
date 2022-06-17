@@ -1,7 +1,13 @@
-all: main register train
+all: main register train rbc
 
 main: main.c main.h
 	cc main.c -o main
+
+rbc: rbc.o socket-utils.o
+	cc rbc.o socket-utils.o -o rbc
+
+rbc.o: rbc.c socket-utils.h
+	cc -c rbc.c
 
 register: register.o socket-utils.o 
 	cc register.o socket-utils.o -o register
