@@ -18,7 +18,6 @@
 int main(int argc, char* argv[]){
   Train train;
   fillTrainData(&train, argv);
-  // printf("%s: received route (route[2] = %s)\n", train.name, train.route[2]); // debug
   runTrain(&train);
 }
 
@@ -132,19 +131,19 @@ int checkNextMASegmentETCS1(Train* train) {
 
 void runSocketHandlerRbc(int clientFd, void* payload){
   Train* train = (Train*) payload;
-  MASegment nextSegment;
-  ssize_t writeTrain, writeAction, writeSegment;
+  MASegment nextSegment, currentSegment;
+  ssize_t writeTrain, writeCurrentSegment, writeNextSegment;
   char nextSegmentStatus[5];
-  char actionString[5];
 
   strncpy(nextSegment, *(train->nextMApt), sizeof(*(train->nextMApt)));
-  sprintf(actionString, "%d", ACTION_ENTER_SEGMENT);
+  strncpy(currentSegment, *(train->nextMApt - 1), sizeof(*(train->nextMApt - 1)));
+
 
   writeTrain = write(clientFd, train->name, sizeof(train->name));
-  writeAction = write(clientFd, actionString, 1);
-  writeSegment = write(clientFd, nextSegment, sizeof(nextSegment));
+  writeCurrentSegment = write(clientFd, currentSegment, sizeof(currentSegment));
+  writeNextSegment = write(clientFd, nextSegment, sizeof(nextSegment));
 
-  if (writeTrain <= 0 || writeAction <= 0 || writeSegment <= 0)
+  if (writeTrain <= 0 || writeCurrentSegment <= 0 || writeNextSegment <= 0)
     perror("runSocketHandlerRbc");
 
   if (read(clientFd, nextSegmentStatus, 1) != 1){
@@ -221,7 +220,7 @@ void runSocketHandlerRegister(int clientFd, void* payload) {
     hasRead = read(clientFd, &currentChar, 1);
     buffer[i] = currentChar;
 
-    if (currentChar == '\0') {
+    if (currentChar == '\0') { 
       strcpy(train->route[j], buffer);
       j++;
       i = 0;

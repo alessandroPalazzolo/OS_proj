@@ -33,26 +33,13 @@ int main(int argc, char* argv[]) {
   runSocket(&sock, &runSocketHandler);
 }
 
-void runSocketHandler(int clientFd, void* payload) {
-  Map* map = (Map*) payload;
-  char trainName[5];
-  int readResult, writeResult, trainIndex;
-
-  readResult = read(clientFd, trainName, 5);
-  // printf("Register: connection from %s\n", trainName); //debug
-
-  if (readResult == -1){
-    perror("runSocketHandler");
-    exit(EXIT_FAILURE);
-  }
-
-  trainIndex = atoi(trainName + 1) - 1;
-
+void sendItinerary(int trainId, int clientFd, Map* map){
+  int writeResult;
   char routeSegment[5]; 
   bool isLastSegment = false;
 
   for (int i = 0; i < MAX_ROUTE_SEGMENTS; i++){
-    strcpy(routeSegment, (*map)[trainIndex][i]);
+    strcpy(routeSegment, (*map)[trainId][i]);
     writeResult = write(clientFd, routeSegment, strlen(routeSegment) + 1);
 
     if (writeResult == -1) {
@@ -62,6 +49,27 @@ void runSocketHandler(int clientFd, void* payload) {
 
     isLastSegment = routeSegment[0] == 'S' && i;
     if (isLastSegment) break;
+  }
+}
+
+void runSocketHandler(int clientFd, void* payload) {
+  Map* map = (Map*) payload;
+  char requestSender[5];
+  int readResult;
+
+  readResult = read(clientFd, requestSender, 5);
+
+  if (readResult == -1){
+    perror("runSocketHandler");
+    exit(EXIT_FAILURE);
+  }
+
+  if (!strcmp(requestSender, "rbc")){
+    for (int i = 0; i<TRAINS_COUNT; i++)
+      sendItinerary(i, clientFd, map);
+  } else {
+    int trainIndex = atoi(requestSender + 1) - 1;
+    sendItinerary(trainIndex, clientFd, map);
   }
 }
 

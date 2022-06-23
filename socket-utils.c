@@ -61,16 +61,17 @@ void runSocket(SocketDetails* sock, void (*func_pt)(int, void*)) {
                 (*func_pt)(clientFd, sock->payload);
                 close(clientFd);
 
-                // pid = fork();
-                // if (pid == 0){
-                //     (*func_pt)(clientFd, sock->payload);
-                //     close(clientFd);
-                //     exit(EXIT_SUCCESS);
-                // } else if (pid > 0) {
-                //     close(clientFd);
-                // } else {
-                //     perror("runSocket");
-                // }
+                // CODE FOR CONCURRENT SERVER
+                    // pid = fork();
+                    // if (pid == 0){
+                    //     (*func_pt)(clientFd, sock->payload);
+                    //     close(clientFd);
+                    //     exit(EXIT_SUCCESS);
+                    // } else if (pid > 0) {
+                    //     close(clientFd);
+                    // } else {
+                    //     perror("runSocket");
+                    // }
             }
             break;
         case CLIENT:
@@ -78,12 +79,13 @@ void runSocket(SocketDetails* sock, void (*func_pt)(int, void*)) {
             struct sockaddr* serverSockAddrPtr = (struct sockaddr*) &sock->serverUNIXaddr;
 
             do { 
-                isConnected = connect (sock->clientFd, serverSockAddrPtr, sock->serverLen);
+                isConnected = connect(sock->clientFd, serverSockAddrPtr, sock->serverLen);
                 if (isConnected == -1) 
                     sleep (1);
             } while (isConnected == -1);
-                (*func_pt)(sock->clientFd, sock->payload);
-                close (clientFd); 
+            
+            (*func_pt)(sock->clientFd, sock->payload);
+            close (clientFd); 
             break;
         default:
             perror("runSocket");

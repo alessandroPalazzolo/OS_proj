@@ -13,13 +13,11 @@
 void getMap(Map*);
 void runSocketHandlerClient(int, void*);
 void runSocketHandlerServer(int, void*);
-
 typedef struct {
     Map map;
     int segmentsOccupation[SEGMENTS_COUNT];
     int stationsOccupation[STATIONS_COUNT];
 } RBC;
-
 
 int main(int argc, char* argv[]) {
     RBC rbc;
@@ -30,11 +28,9 @@ int main(int argc, char* argv[]) {
         rbc.segmentsOccupation[i] = 0;
     }
 
-    for (int i = 0; i < TRAINS_COUNT; i++) {
-        int stationIndex = atoi(rbc.map[i][0] + 1) - 1;
-        rbc.stationsOccupation[stationIndex]++;
+    for (int i = 0; i < STATIONS_COUNT; i++) {
+        rbc.stationsOccupation[i] = 1;
     }
-
 
     SocketDetails sock;
     sock.type = SERVER;
@@ -47,51 +43,53 @@ int main(int argc, char* argv[]) {
 
 void runSocketHandlerServer(int clientFd, void* payload) {
     RBC* rbc = (RBC*) payload;
-    char train[4], action[5], segment[5];
-    ssize_t readTrain, readAction, readSegment;
-    int MAindex, currentAction = -1;
+    char train[4], exitSegment[5], enterSegment[5];
+    ssize_t readTrain, readEnterSegment, readExitSegment;
+    int enterMAindex, exitMAindex;
     char nextSegFree[2], nextSegOccupied[2], nextSegStation[2];
 
     readTrain = read(clientFd, train, 4);
-    readAction = read(clientFd, action, 10);
-    readSegment = read(clientFd, segment, 5);
+    readExitSegment = read(clientFd, exitSegment, 5);
+    readEnterSegment = read(clientFd, enterSegment, 5);
 
-    if (readTrain < 0 || readAction < 0 || readSegment < 0)
-        perror("runSocketHandlerServer");
+    if (readTrain < 0 || readExitSegment < 0 || readEnterSegment < 0);
+        printf("runSocketHandlerServer %s", train);
 
-    MAindex = atoi(segment+2) - 1;
-    currentAction = atoi(action);
+    enterMAindex = atoi(enterSegment+2) - 1;
+    exitMAindex = atoi(exitSegment+2) - 1;
+
     sprintf(nextSegFree, "%d", NEXT_SEG_FREE);
     sprintf(nextSegOccupied, "%d", NEXT_SEG_OCCUPIED);
     sprintf(nextSegStation, "%d", NEXT_SEG_STATION);
 
-    switch(currentAction){
-        case ACTION_ENTER_SEGMENT:
-            if (segment[0] == "S"){
-                if (write(clientFd, nextSegStation, 1) < 0){
-                    perror("runSocketHandlerServer");
-                }
-                rbc->stationsOccupation[MAindex]++;
-            } else if (!rbc->segmentsOccupation[MAindex]){
-                if (write(clientFd, nextSegFree, 1) < 0){
-                    perror("runSocketHandlerServer");
-                }
-                rbc->segmentsOccupation[MAindex] = 1;
-                rbc->segmentsOccupation[MAindex-1] = 0; //remove
-            } else {
-                if (write(clientFd, nextSegOccupied, 1) < 0){
-                    perror("runSocketHandlerServer");
-                }
-            }
-            break;
-        case ACTION_EXIT_SEGMENT:
-            rbc->segmentsOccupation[MAindex] = 0;
-            break;
-        default:
+    if (enterSegment[0] == 'S'){
+        if (write(clientFd, nextSegStation, 1) < 0){
             perror("runSocketHandlerServer");
+        }
+
+        enterMAindex = atoi(enterSegment+1) - 1;
+        rbc->stationsOccupation[enterMAindex]++;
+        rbc->segmentsOccupation[exitMAindex] = 0;
+        return;
+    }
+
+    if (!(rbc->segmentsOccupation[enterMAindex])){
+        if (write(clientFd, nextSegFree, 1) < 0){
+            perror("runSocketHandlerServer");
+        }
+        rbc->segmentsOccupation[enterMAindex] = 1;
+        if (exitSegment[0] == 'S'){ 
+            exitMAindex = atoi(exitSegment+1) - 1;
+            rbc->stationsOccupation[exitMAindex] = 0;
+        } else {
+            rbc->segmentsOccupation[exitMAindex] = 0;
+        }
+    } else {
+        if (write(clientFd, nextSegOccupied, 1) < 0){
+            perror("runSocketHandlerServer");
+        }
     }
 }
-
  
 void getMap(Map* map) {
     SocketDetails sock;
@@ -102,17 +100,15 @@ void getMap(Map* map) {
     runSocket(&sock, &runSocketHandlerClient);
 }
 
-
-
-// RBC pretend to be each train, maybe better if register can handle an rbc request sending map directly (?)
 void runSocketHandlerClient(int clientFd, void* payload) {
     Map* map = (Map*) payload;
-    char train[4];
+
+    if (write(clientFd, "rbc", 3) < 0){
+        perror("runSocketHandlerClient");
+        exit(EXIT_FAILURE);
+    }
 
     for(int i = 0; i < TRAINS_COUNT; i++) {
-        sprintf(train, "T%d", i+1);
-        write(clientFd, train, 4);
-
        	char buffer[5], currentChar;
     	int hasRead, k = 0, j = 0;
 
@@ -120,7 +116,7 @@ void runSocketHandlerClient(int clientFd, void* payload) {
         	hasRead = read(clientFd, &currentChar, 1);
         	buffer[k] = currentChar;
         	if (currentChar == '\0') {
-        		strcpy(*map[i][j], buffer);
+        		strcpy((*map)[i][j], buffer);
         		j++;
         		k = 0;
         		memset(buffer, '\0', 4);

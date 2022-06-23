@@ -19,7 +19,7 @@ int main(int argc, char* argv[]) {
     parseArgs(argc, argv);
 
     if (env.isRBC) {
-        execl("rbc", "./rbc");
+        execl("rbc", "./rbc", NULL);
     }
 
     if(!initMASegments()){
