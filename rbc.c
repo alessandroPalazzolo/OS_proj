@@ -7,6 +7,7 @@
 #include <sys/stat.h>
 #include <sys/socket.h>
 #include <stdbool.h>
+#include <time.h>
 
 #include "globals.h"
 #include "socket-utils.h"
@@ -63,7 +64,7 @@ void runSocketHandlerServer(int clientFd, void* payload) {
     readExitSegment = read(clientFd, exitSegment, 5);
     readEnterSegment = read(clientFd, enterSegment, 5);
 
-    if (readTrain < 0 || readExitSegment < 0 || readEnterSegment < 0);
+    if (readTrain < 0 || readExitSegment < 0 || readEnterSegment < 0)
         printf("runSocketHandlerServer %s", train);
 
     enterMAindex = atoi(enterSegment+2) - 1;
@@ -153,7 +154,7 @@ void logRbc(int fd, char* trainName, MASegment exitSegment, MASegment enterSegme
         strcpy(accessStr, "false");
     }
  
-    sprintf(logString, "[train: %s] [actual: %s] [next: %s] [access granted: %s] %s", trainName, exitSegment, enterSegment, accessStr, timeString);
+    sprintf(logString, "[train: %s] [actual: %s] [next: %s] [access granted: %s] %s \n", trainName, exitSegment, enterSegment, accessStr, timeString);
     if (write(fd, logString, strlen(logString)) != strlen(logString)) {
         perror("logTrainStatus");
     }
