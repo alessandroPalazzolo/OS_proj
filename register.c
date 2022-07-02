@@ -23,8 +23,8 @@ int main(int argc, char* argv[]) {
 
   mapIsLoaded = loadMapFromFile(mapName, &map); 
   if(!mapIsLoaded){
-    perror("Register error loading map");
-    exit(EXIT_FAILURE);
+	perror("Register error loading map");
+	exit(EXIT_FAILURE);
   }
 
   initSocket(&sock, "register_socket");
@@ -33,35 +33,45 @@ int main(int argc, char* argv[]) {
 }
 
 void runSocketHandler(int clientFd, void* payload) {
-  Map* map = (Map*) payload;
-  char trainName[5];
-  int readResult, writeResult, trainIndex;
+  	Map* map = (Map*) payload;
+  	char applicant[5];
+  	int readResult;
 
-  readResult = read(clientFd, trainName, 5);
-  printf("Register: connection from %s\n", trainName); //debug
+  	readResult = read(clientFd, applicant, 5);
+  	printf("Register: connection from %s\n", applicant); //debug
 
-  if (readResult == -1){
-    perror("runSocketHandler");
-    exit(EXIT_FAILURE);
+  	if (readResult == -1){
+		perror("runSocketHandler");
+		exit(EXIT_FAILURE);
+	}
+
+	if (strncmp(applicant, "RBC", 3)) {
+		for(int i = 0; i < TRAINS_COUNT; i++) {
+			sendRoute(clientFd, map, i);
+		}
+	} else {
+		int trainIndex = atoi(applicant + 1) - 1;
+		sendRoute(clientFd, map, trainIndex);
+	}
+}
+
+void sendRoute(int clientFd, Map* map, int trainIndex) {
+	int writeResult;
+	char routeSegment[5];
+	bool isLastSegment = false;
+	
+	for (int i = 0; i < MAX_ROUTE_SEGMENTS && !isLastSegment; i++){
+		strcpy(routeSegment, (*map)[trainIndex][i]);
+		writeResult = write(clientFd, routeSegment, strlen(routeSegment) + 1);
+
+	if (writeResult == -1) {
+		perror("runSocketHandler");
+		exit(EXIT_FAILURE);
+	}
+
+	isLastSegment = (routeSegment[0] == 'S' && i);
   }
 
-  trainIndex = atoi(trainName + 1) - 1;
-
-  char routeSegment[5]; 
-  bool isLastSegment = false;
-
-  for (int i = 0; i < MAX_ROUTE_SEGMENTS; i++){
-    strcpy(routeSegment, (*map)[trainIndex][i]);
-    writeResult = write(clientFd, routeSegment, strlen(routeSegment) + 1);
-
-    if (writeResult == -1) {
-      perror("runSocketHandler");
-      exit(EXIT_FAILURE);
-    }
-
-    isLastSegment = routeSegment[0] == 'S' && i;
-    if (isLastSegment) break;
-  }
 }
 
 int loadMapFromFile(char* chosenMap, Map* destMap) {
@@ -71,41 +81,41 @@ int loadMapFromFile(char* chosenMap, Map* destMap) {
 
   mapFd = open(path, O_RDONLY);
   if (mapFd < 0){
-    return 0;
+	return 0;
   }
 
   int i, j, z;
   bool isEOF = false;
 
   for (z = 0; z < TRAINS_COUNT; z++){
-    i = 0;
-    j = 0;
+	i = 0;
+	j = 0;
 
-    do {
-      readResult = read(mapFd, &currentChar, 1);
+	do {
+	  readResult = read(mapFd, &currentChar, 1);
 
-      if (readResult == -1){
-        return 0; 
-      }
+	  if (readResult == -1){
+		return 0; 
+	  }
 
-      if (!readResult){
-        isEOF = true;
-      }
-      
-      buffer[i] = currentChar;
+	  if (!readResult){
+		isEOF = true;
+	  }
+	  
+	  buffer[i] = currentChar;
 
-      if (currentChar == 32 || currentChar == '\n') {
-        buffer[i] = '\0';
-        strcpy((*destMap)[z][j], buffer);
-        memset(buffer, '\0', 20);
-        j++;
-        i = 0;
-      } else {
-        i++;
-      }
-    } while (currentChar != '\n');
+	  if (currentChar == 32 || currentChar == '\n') {
+		buffer[i] = '\0';
+		strcpy((*destMap)[z][j], buffer);
+		memset(buffer, '\0', 20);
+		j++;
+		i = 0;
+	  } else {
+		i++;
+	  }
+	} while (currentChar != '\n');
 
-    if (isEOF) break;
+	if (isEOF) break;
   }
   
   return 1;

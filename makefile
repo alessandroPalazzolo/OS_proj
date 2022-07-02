@@ -1,3 +1,5 @@
+all: main register train
+
 main: main.c main.h
 	cc main.c -o main
 

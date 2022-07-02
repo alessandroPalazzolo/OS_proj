@@ -49,7 +49,7 @@ int main(int argc, char* argv[]) {
 void runSocketHandlerServer(int clientFd, void* payload) {
     
     RBC* statusRBC = (RBC*) payload;
-    char train[4] action[7], segment[4];
+    char train[4], action[7], segment[4];
     int result;
 
     if (read(clientFd, train, 4) < 0)
@@ -63,10 +63,10 @@ void runSocketHandlerServer(int clientFd, void* payload) {
 
     int MAIndex = atoi(segment+2);
 
-    if (strncmp(action, "enter", 5) {
+    if (strncmp(action, "enter", 5)) {
         
-        if(*statusRBC.segmentsOccupation[MAIndex] == 0){
-            *statusRBC.segmentsOccupation[MAIndex] = 1;
+        if(statusRBC->segmentsOccupation[MAIndex] == 0){
+            statusRBC->segmentsOccupation[MAIndex] = 1;
 
             if(write(clientFd, "granted", 7) < 0) 
                 perror("runSocketHandlerServer");
@@ -74,9 +74,10 @@ void runSocketHandlerServer(int clientFd, void* payload) {
             //logRbc(train, segment);
 
         } else {
+
             if(write(clientFd, "denied", 7) < 0)
                 perror("runSocketHandlerServer");
-
+                
             //logRbc(train, segment);
         }
     }
@@ -85,8 +86,6 @@ void runSocketHandlerServer(int clientFd, void* payload) {
         if(write(clientFd, "granted", 7) < 0)
             perror("runSocketHandlerServer");
     }
-
-
 }
 
  
@@ -104,12 +103,16 @@ void getMap(Map* map) {
 // RBC pretend to be each train, maybe better if register can handle an rbc request sending map directly (?)
 void runSocketHandlerClient(int clientFd, void* payload) {
     Map* map = (Map*) payload;
+    int writeResult;
     char train[4];
 
-    for(int i = 0; i < TRAINS_COUNT; i++) {
-        sprintf(train, "T%d", i+1);
-        write(clientFd, train, 4);
+    writeResult = write(clientFd, "RBC", 4);
 
+    if (writeResult == -1) {
+        perror("runSocketHandlerClient");
+    }
+    
+    for(int i = 0; i < TRAINS_COUNT; i++) {
        	char buffer[5], currentChar;
     	int hasRead, k = 0, j = 0;
 

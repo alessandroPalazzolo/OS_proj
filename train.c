@@ -130,6 +130,15 @@ int checkNextMASegmentETCS1(MASegment nextMA) {
 }
 
 int checkNextMASegmentETCS2(MASegment nextMA) {
+	SocketDetails sock;
+	sock.type = CLIENT;
+	sock.payload = train;
+
+	initSocket(&sock, "register_socket");
+	runSocket(&sock, &runSocketHandler);
+
+
+
 	int resETCS2 = 0; // ask RBC for permission
 										
 	int resETCS1 = checkNextMASegmentETCS1(nextMA);
