@@ -172,8 +172,7 @@ int checkNextMASegmentETCS2(Train* train) {
 }
 
 void logTrainStatus(int fd, MASegment currentMA, MASegment nextMA) {
-  char logString[100]; 
-  char timeString[40];
+  char logString[100], timeString[40];
   time_t timeSec = time(NULL);
   struct tm* timeInfo = localtime(&timeSec);
   strftime(timeString, sizeof(timeString), "%d %B %Y %X", timeInfo);
