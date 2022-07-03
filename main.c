@@ -9,12 +9,18 @@
 #include <error.h>
 #include <semaphore.h>
 #include <sys/stat.h>
+#include <signal.h>
+#include <sys/wait.h>
 
 #include "globals.h"
+// #include "socket-utils.h"
 #include "main.h"
 
+pid_t trainPids[TRAINS_COUNT];
+int sigCounter = 0;
+
 int main(int argc, char* argv[]) {
-    pid_t registerPid;
+    signal(SIGUSR1, signalHandler);
 
     parseArgs(argc, argv);
 
@@ -26,11 +32,37 @@ int main(int argc, char* argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    execRegister();  
+    execRegister();
     execTrains();
+
+    // if (env.MODE == "ETCS2") {
+    //     killRbc();
+    // }
 
     exit(EXIT_SUCCESS);
 }
+
+void runSocketHandlerKillRbc(int clientFd, void* payload){
+    pid_t rbcPid;
+    char rbcPidToString[5];
+
+    if (read(clientFd, rbcPidToString, 5) < 0){
+        perror("killRbc");
+        exit(EXIT_FAILURE);
+    }
+
+    rbcPid = atoi(rbcPidToString);
+    kill(rbcPid, SIGTERM);
+}
+
+// void killRbc(){
+//     SocketDetails sock;
+//     sock.type = SERVER;
+
+//     initSocket(&sock, "pid_socket");
+//     buildSocket(&sock, 5);
+//     runSocket(&sock, &runSocketHandlerKillRbc);
+// }
 
 void parseArgs(int length, char** args) { 
     switch(length) {
@@ -92,6 +124,19 @@ bool initMASegments() {
     return true;
 }
 
+void signalHandler(int sig){
+    sigCounter++;
+    printf("%d\n", sigCounter);
+
+    if (sigCounter == TRAINS_COUNT){
+        for (int i = 0; i < TRAINS_COUNT; i++){
+            puts("robe");
+            printf("about to kill %d\n", trainPids[i]);
+            kill(trainPids[i], SIGTERM);
+        }
+    }
+}
+
 void execTrains() {
     pid_t pid;
 
@@ -106,7 +151,13 @@ void execTrains() {
         } else if (pid < 0){
             perror("execTrains");
             exit(EXIT_FAILURE);
+        } else {
+            trainPids[i] = pid;
         }
+    }
+
+    for (int i = 0; i < TRAINS_COUNT; i++){
+        pause();
     }
 }
 

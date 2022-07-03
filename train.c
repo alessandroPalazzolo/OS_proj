@@ -9,6 +9,7 @@
 #include <time.h>
 #include <semaphore.h>
 #include <sys/stat.h>
+#include <signal.h>
 
 
 #include "socket-utils.h"
@@ -19,12 +20,16 @@ int main(int argc, char* argv[]){
   Train train;
   fillTrainData(&train, argv);
   runTrain(&train);
+  do {
+    kill(getppid(), SIGUSR1);
+    sleep(15);
+  } while(1);
 }
 
 void fillTrainData(Train* train, char* argv[]) {
   char mode[10];
 
-  strcpy(train->name,  argv[1]);
+  strcpy(train->name, argv[1]); 
   strcpy(mode, argv[2]);
 
   if (!strcmp(mode, "ETCS1")) {
@@ -95,7 +100,6 @@ void runTrain(Train* train) {
   }
 
   close(train->logFileFd);
-  exit(EXIT_SUCCESS); //return 0
 }
 
 int checkNextMASegmentETCS1(Train* train) {
@@ -115,7 +119,8 @@ int checkNextMASegmentETCS1(Train* train) {
   if (MAFileFd < 0){
     perror("checkNextMASegmentETCS1");
     close(MAFileFd);
-    return -1;
+    kill(getppid(), SIGUSR1);
+    pause();
   }
 
   if (read(MAFileFd, &MAStatus, 1) < 0 ) {
@@ -157,18 +162,11 @@ int checkNextMASegmentETCS2(Train* train) {
   SocketDetails sock;
   sock.type = CLIENT;
   sock.payload = train;
-  int nextSegmentFileStatus;
-
+  
   initSocket(&sock, "RBC_socket");
   runSocket(&sock, &runSocketHandlerRbc);
 
-  nextSegmentFileStatus = checkNextMASegmentETCS1(train);
-
-  if (nextSegmentFileStatus == train->RBCresponse) {
-    return train->RBCresponse;
-  } else {
-    return NEXT_SEG_OCCUPIED;
-  }
+  return train->RBCresponse;
 }
 
 void logTrainStatus(int fd, MASegment currentMA, MASegment nextMA) {

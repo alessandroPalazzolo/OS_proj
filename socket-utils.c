@@ -60,18 +60,6 @@ void runSocket(SocketDetails* sock, void (*func_pt)(int, void*)) {
                 
                 (*func_pt)(clientFd, sock->payload);
                 close(clientFd);
-
-                // CODE FOR CONCURRENT SERVER
-                    // pid = fork();
-                    // if (pid == 0){
-                    //     (*func_pt)(clientFd, sock->payload);
-                    //     close(clientFd);
-                    //     exit(EXIT_SUCCESS);
-                    // } else if (pid > 0) {
-                    //     close(clientFd);
-                    // } else {
-                    //     perror("runSocket");
-                    // }
             }
             break;
         case CLIENT:

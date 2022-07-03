@@ -33,7 +33,7 @@ int main(int argc, char* argv[]) {
   runSocket(&sock, &runSocketHandler);
 }
 
-void sendItinerary(int trainId, int clientFd, Map* map){
+void sendRoute(int trainId, int clientFd, Map* map){
   int writeResult;
   char routeSegment[5]; 
   bool isLastSegment = false;
@@ -66,10 +66,10 @@ void runSocketHandler(int clientFd, void* payload) {
 
   if (!strcmp(requestSender, "rbc")){
     for (int i = 0; i<TRAINS_COUNT; i++)
-      sendItinerary(i, clientFd, map);
+      sendRoute(i, clientFd, map);
   } else {
     int trainIndex = atoi(requestSender + 1) - 1;
-    sendItinerary(trainIndex, clientFd, map);
+    sendRoute(trainIndex, clientFd, map);
   }
 }
 

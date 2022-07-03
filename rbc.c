@@ -11,6 +11,8 @@
 #include "socket-utils.h"
 
 void getMap(Map*);
+void sendPid();
+void runSocketHandlerSendPid(int, void*);
 void runSocketHandlerClient(int, void*);
 void runSocketHandlerServer(int, void*);
 typedef struct {
@@ -39,6 +41,30 @@ int main(int argc, char* argv[]) {
     initSocket(&sock, "RBC_socket");
     buildSocket(&sock, 5);
     runSocket(&sock, &runSocketHandlerServer);
+
+    // sendPid();
+}
+
+void runSocketHandlerSendPid(int clientFd, void* payload){
+    pid_t myPid = *((pid_t*) payload);
+    char myPidToString[5];
+
+    sprintf(myPidToString, "%d", myPid);
+
+    if (write(clientFd, myPidToString, strlen(myPidToString)) < 0){
+        perror("runSocketHandlerSendPid");
+        exit(EXIT_FAILURE);
+    }
+}
+
+void sendPid(){
+    pid_t myPid = getpid();
+    SocketDetails sock;
+    sock.type = CLIENT;
+    sock.payload = (void*) &myPid;
+
+    initSocket(&sock, "pid_socket");
+    runSocket(&sock, &runSocketHandlerSendPid);
 }
 
 void runSocketHandlerServer(int clientFd, void* payload) {
@@ -52,8 +78,10 @@ void runSocketHandlerServer(int clientFd, void* payload) {
     readExitSegment = read(clientFd, exitSegment, 5);
     readEnterSegment = read(clientFd, enterSegment, 5);
 
-    if (readTrain < 0 || readExitSegment < 0 || readEnterSegment < 0);
-        printf("runSocketHandlerServer %s", train);
+    if (readTrain < 0 || readExitSegment < 0 || readEnterSegment < 0){
+        perror("runSocketHandlerServer");
+        exit(EXIT_FAILURE);
+    }
 
     enterMAindex = atoi(enterSegment+2) - 1;
     exitMAindex = atoi(exitSegment+2) - 1;
@@ -80,7 +108,7 @@ void runSocketHandlerServer(int clientFd, void* payload) {
         rbc->segmentsOccupation[enterMAindex] = 1;
         if (exitSegment[0] == 'S'){ 
             exitMAindex = atoi(exitSegment+1) - 1;
-            rbc->stationsOccupation[exitMAindex] = 0;
+            rbc->stationsOccupation[exitMAindex]--;
         } else {
             rbc->segmentsOccupation[exitMAindex] = 0;
         }
