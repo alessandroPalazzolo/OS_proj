@@ -55,8 +55,8 @@ void runTrain(Train* train) {
   bool arrived = false; 
 
   while(!arrived) {
-    sem_t* MASem = sem_open(*nextMApt, O_CREAT, 0666, 1);
     train->nextMApt = nextMApt;
+    sem_t* MASem = sem_open(*nextMApt, O_CREAT, 0666, 1);
     sem_wait(MASem);
 
     logTrainStatus(train->logFileFd, *currentMApt, *nextMApt);

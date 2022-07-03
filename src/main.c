@@ -9,12 +9,14 @@
 #include <error.h>
 #include <semaphore.h>
 #include <sys/stat.h>
+#include <signal.h>
 
 #include "globals.h"
 #include "main.h"
 
 int main(int argc, char* argv[]) {
     pid_t registerPid;
+    int sigCounter;
 
     parseArgs(argc, argv);
 
@@ -29,6 +31,7 @@ int main(int argc, char* argv[]) {
     execRegister();  
     execTrains();
 
+    while(sigCounter < 5 );
     exit(EXIT_SUCCESS);
 }
 
