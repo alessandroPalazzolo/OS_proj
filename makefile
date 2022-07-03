@@ -1,25 +1,38 @@
-all: main register train rbc
+
+VPATH = src:obj:bin
+
+all: dir main bin/train bin/register bin/rbc
+
+dir: 
+	mkdir -p bin obj log
 
 main: main.c main.h
-	cc main.c -o main
+	cc $< -o $@
 
-rbc: rbc.o socket-utils.o
-	cc rbc.o socket-utils.o -o rbc
+bin/train: train.o socket-utils.o dir
+	cc obj/train.o obj/socket-utils.o -o $@
 
-rbc.o: rbc.c socket-utils.h
-	cc -c rbc.c
+bin/register: register.o socket-utils.o dir 
+	cc obj/register.o obj/socket-utils.o -o $@
 
-register: register.o socket-utils.o 
-	cc register.o socket-utils.o -o register
+bin/rbc: rbc.o socket-utils.o dir 
+	cc obj/rbc.o obj/socket-utils.o -o $@
 
-register.o: register.c register.h socket-utils.h
-	cc -c register.c
+obj/train.o: train.c train.h socket-utils.c dir
+	cc -c $< -o $@
 
-train: train.o socket-utils.o
-	cc train.o socket-utils.o -o train
+obj/register.o: register.c register.h socket-utils.c dir
+	cc -c $< -o $@
 
-train.o: train.c train.h socket-utils.h
-	cc -c train.c
+obj/rbc.o: rbc.c rbc.h socket-utils.c dir
+	cc -c $< -o $@
 
-socket-utils.o: socket-utils.c socket-utils.h
-	cc -c socket-utils.c
+obj/socket-utils.o: socket-utils.c socket-utils.h dir
+	cc -c $< -o $@
+
+clean:
+	rm -rdf main obj bin
+	rm -rdf assets/MA* assets/log
+
+
+

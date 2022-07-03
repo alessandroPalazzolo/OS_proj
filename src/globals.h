@@ -5,8 +5,8 @@
 #define MAX_ROUTE_SEGMENTS 10
 #define ACTION_ENTER_SEGMENT 1
 #define ACTION_EXIT_SEGMENT 0
-#define NEXT_SEG_FREE 0
-#define NEXT_SEG_OCCUPIED 1
+#define NEXT_SEG_FREE 1
+#define NEXT_SEG_OCCUPIED 0
 #define NEXT_SEG_STATION 2
 
 typedef char MASegment[5];

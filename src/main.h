@@ -5,8 +5,8 @@ struct Config {
 } env;
 
 void parseArgs(int, char**);
-void runSocketHandlerKillRbc(int, void*);
-void killRbc();
+// void runSocketHandlerKillRbc(int, void*);
+// void killRbc();
 bool initMASegments();
 void signalHandler(int);
 void execTrains();

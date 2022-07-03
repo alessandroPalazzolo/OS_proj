@@ -41,12 +41,12 @@ void fillTrainData(Train* train, char* argv[]) {
   getRoute(train); 
 
   char logFilePath[20];
-  sprintf(logFilePath, "log/%s.log", train->name);
+  sprintf(logFilePath, "./log/%s.log", train->name);
   umask(0);
   int fd = open(logFilePath, O_WRONLY | O_TRUNC | O_CREAT, 0666);
 
   if (fd < 0) {
-    perror("runTrain");
+    perror("fillTrainData");
     exit(EXIT_FAILURE);
   }
 
@@ -60,8 +60,8 @@ void runTrain(Train* train) {
   bool arrived = false; 
 
   while(!arrived) {
-    sem_t* MASem = sem_open(*nextMApt, O_CREAT, 0666, 1);
     train->nextMApt = nextMApt;
+    sem_t* MASem = sem_open(*nextMApt, O_CREAT, 0666, 1);
     sem_wait(MASem);
 
     logTrainStatus(train->logFileFd, *currentMApt, *nextMApt);
@@ -113,6 +113,7 @@ int checkNextMASegmentETCS1(Train* train) {
     return NEXT_SEG_STATION;
 
   sprintf(MASegmentPath, "./assets/%s", nextMA);
+  printf("%s\n", MASegmentPath);
 
   int MAFileFd = open(MASegmentPath, O_RDONLY);
 
@@ -170,15 +171,13 @@ int checkNextMASegmentETCS2(Train* train) {
 }
 
 void logTrainStatus(int fd, MASegment currentMA, MASegment nextMA) {
-  char logString[100]; 
-  char timeString[40];
+  char logString[100], timeString[40];
   time_t timeSec = time(NULL);
   struct tm* timeInfo = localtime(&timeSec);
   strftime(timeString, sizeof(timeString), "%d %B %Y %X", timeInfo);
   sprintf(logString, "[actual:%s] [next:%s] %s\n", currentMA, nextMA, timeString);
   if (write(fd, logString, strlen(logString)) != strlen(logString)) {
     perror("logTrainStatus");
-    //some error
   }
 }
 

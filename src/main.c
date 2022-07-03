@@ -25,7 +25,7 @@ int main(int argc, char* argv[]) {
     parseArgs(argc, argv);
 
     if (env.isRBC) {
-        execl("rbc", "./rbc", NULL);
+        execl("bin/rbc", "./rbc", NULL);
     }
 
     if(!initMASegments()){
@@ -78,23 +78,23 @@ void parseArgs(int length, char** args) {
             break;
         default:
             perror("parseArgs");
-            exit(EXIT_FAILURE);// usage()
+            exit(EXIT_FAILURE);
             break;
     }
 
     if (strncmp(env.MODE, "ETCS", 4)) {
         perror("parseArgs");
-        exit(EXIT_FAILURE);// usage()
+        exit(EXIT_FAILURE);
     }
 
     if (strncmp(env.MAP, "MAPPA", 5)) {
         perror("parseArgs");
-        exit(EXIT_FAILURE);// usage()
+        exit(EXIT_FAILURE);
     }
 
     if (env.isRBC && strcmp(args[2], "RBC")) {
         perror("parseArgs");
-        exit(EXIT_FAILURE);// usage()
+        exit(EXIT_FAILURE);
     }
 }
 
@@ -126,12 +126,9 @@ bool initMASegments() {
 
 void signalHandler(int sig){
     sigCounter++;
-    printf("%d\n", sigCounter);
 
     if (sigCounter == TRAINS_COUNT){
         for (int i = 0; i < TRAINS_COUNT; i++){
-            puts("robe");
-            printf("about to kill %d\n", trainPids[i]);
             kill(trainPids[i], SIGTERM);
         }
     }
@@ -146,7 +143,7 @@ void execTrains() {
         if (pid == 0) {
             char trainName[5];
             sprintf(trainName, "T%d", i + 1);
-            execl("train", "./train", trainName, env.MODE, NULL);
+            execl("bin/train", "./train", trainName, env.MODE, NULL);
             perror("execTrains");
         } else if (pid < 0){
             perror("execTrains");
@@ -165,7 +162,7 @@ void execRegister() {
     pid_t pid = fork();  
 
     if (pid == 0) {
-        execl("register", "./register", env.MAP, NULL);
+        execl("bin/register", "./register", env.MAP, NULL);
         perror("execRegister");
     } else if (pid < 0){
         perror("execRegister");
